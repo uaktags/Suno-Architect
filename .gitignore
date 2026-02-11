@@ -25,4 +25,18 @@ dist-ssr
 *.sw?
 
 # env
-.env*
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# local runtime state / caches
+.wrangler/
+.turbo/
+.cache/
+
+# local secret/key material
+*.pem
+*.key
+*.p12
+*.pfx
