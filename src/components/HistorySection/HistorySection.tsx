@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SunoClip, ParsedSunoOutput } from '../../types';
-import { getSunoClip, getSunoFeed } from '../../services/sunoApi';
+import { extractSunoPlaylistId, getSunoClip, getSunoFeed, getSunoPlaylist } from '../../services/sunoApi';
 import HistoryToolbar from './HistoryToolbar';
 import HistoryCard from './HistoryCard';
 import DetailsModal from './DetailsModal';
@@ -91,9 +91,21 @@ const HistorySection: React.FC<HistorySectionProps> = ({ history, onUpdateClip, 
       
       // UUID Check for Direct Import
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
+      const playlistId = extractSunoPlaylistId(input);
 
       try {
-          if (isUUID) {
+          if (playlistId && !isUUID) {
+              const data = await getSunoPlaylist(playlistId, sunoCookie);
+              const playlistClips = Array.isArray(data?.playlist_clips)
+                ? data.playlist_clips
+                    .map((entry: any) => entry?.clip)
+                    .filter(Boolean)
+                : [];
+
+              const clips = playlistClips.map(mapSunoClip);
+              setSearchResults(clips);
+              onAddClip(clips);
+          } else if (isUUID) {
               // Direct Import
               const data = await getSunoClip(input, sunoCookie);
               if (data) {

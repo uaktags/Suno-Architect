@@ -9,17 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-dom": "^19.2.3",
-    "react": "^19.2.3",
     "@google/genai": "^1.33.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "webm-muxer": "^5.1.4"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.1.8",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "tailwindcss": "^4.1.8",
-    "@tailwindcss/vite": "^4.1.18"
+    "wrangler": "^4.64.0"
   }
 }

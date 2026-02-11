@@ -205,15 +205,21 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
   };
 
   const tokenSnippet = `await (async function() {
-    const sessionCookie = await window.Clerk.session.getToken();
+    const sessionToken = await window?.Clerk?.session?.getToken?.();
 
-    if (sessionCookie) {
-        console.log("%c Suno Session Token Found! ", "background: #222; color: #bada55; font-size: 14px;");
-        console.log(sessionCookie);
-        copy(sessionCookie); 
-        console.log("%c Result copied to clipboard automatically.", "color: gray;");
-    } else {
-        console.error("Session token not found. Make sure you are logged in at suno.com");
+    if (!sessionToken) {
+      console.error("Session token not found. Make sure you are logged in at suno.com");
+      return;
+    }
+
+    console.log("%c Suno Session Token Found! ", "background: #222; color: #bada55; font-size: 14px;");
+    console.log(sessionToken);
+
+    try {
+      await navigator.clipboard.writeText(sessionToken);
+      console.log("%c Result copied to clipboard automatically.", "color: gray;");
+    } catch (err) {
+      console.warn("Clipboard write failed. Copy from console output above.", err);
     }
 })();`;
 

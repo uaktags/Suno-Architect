@@ -1,6 +1,67 @@
 
 import { ParsedSunoOutput, LyricAlignmentResponse } from "../types";
 
+export const extractSunoPlaylistId = (input: string): string | null => {
+    const trimmed = (input || "").trim();
+    if (!trimmed) return null;
+
+    const direct = trimmed.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    if (direct) return direct[0];
+
+    const url = trimmed.match(/suno\.com\/playlist\/([0-9a-f-]{36})/i);
+    if (url?.[1]) return url[1];
+
+    const prefixed = trimmed.match(/^playlist:([0-9a-f-]{36})$/i);
+    if (prefixed?.[1]) return prefixed[1];
+
+    return null;
+};
+
+const normalizeSunoAuth = (raw: string): { bearerToken?: string; cookie?: string } => {
+    const trimmed = (raw || "").trim();
+    if (!trimmed) return {};
+
+    // Support users pasting "Bearer <token>" directly.
+    const bearerMatch = trimmed.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch?.[1]) {
+        return { bearerToken: bearerMatch[1].trim() };
+    }
+
+    // Cookie-like payloads usually contain key=value pairs.
+    const looksLikeCookie = /[=;]/.test(trimmed) || trimmed.includes("__session=");
+    if (looksLikeCookie) {
+        return { cookie: trimmed };
+    }
+
+    // JWTs typically start with "ey", but fallback to treating any opaque token as bearer.
+    return { bearerToken: trimmed };
+};
+
+export const getSunoPlaylist = async (playlistIdOrUrl: string, cookie?: string): Promise<any> => {
+    const playlistId = extractSunoPlaylistId(playlistIdOrUrl);
+    if (!playlistId) throw new Error("Invalid playlist ID or URL");
+
+    const ENDPOINT = `https://studio-api.prod.suno.com/api/playlist/${playlistId}`;
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+    };
+
+    if (cookie) {
+        const auth = normalizeSunoAuth(cookie);
+        if (auth.bearerToken) {
+            headers["Authorization"] = `Bearer ${auth.bearerToken}`;
+        } else if (auth.cookie) {
+            headers["Cookie"] = auth.cookie;
+        }
+    }
+
+    const response = await fetch(ENDPOINT, { method: "GET", headers });
+    if (!response.ok) {
+        throw new Error(`Failed to fetch playlist. Status: ${response.status}`);
+    }
+    return response.json();
+};
+
 export const getSunoCredits = async (cookie: string): Promise<number> => {
     if (!cookie) throw new Error("No cookie provided");
     
@@ -12,8 +73,14 @@ export const getSunoCredits = async (cookie: string): Promise<number> => {
             "Content-Type": "application/json",
         };
 
-        const trimmedCookie = cookie.trim();
-        headers["Authorization"] = `Bearer ${trimmedCookie}`;
+        const auth = normalizeSunoAuth(cookie);
+        if (auth.bearerToken) {
+            headers["Authorization"] = `Bearer ${auth.bearerToken}`;
+        } else if (auth.cookie) {
+            headers["Cookie"] = auth.cookie;
+        } else {
+            throw new Error("Invalid Suno token/cookie format");
+        }
 
         const response = await fetch(BILLING_ENDPOINT, {
             method: "GET",
@@ -48,8 +115,14 @@ export const getSunoFeed = async (
             "Content-Type": "application/json",
         };
 
-        const trimmedCookie = cookie.trim();
-        headers["Authorization"] = `Bearer ${trimmedCookie}`;
+        const auth = normalizeSunoAuth(cookie);
+        if (auth.bearerToken) {
+            headers["Authorization"] = `Bearer ${auth.bearerToken}`;
+        } else if (auth.cookie) {
+            headers["Cookie"] = auth.cookie;
+        } else {
+            throw new Error("Invalid Suno token/cookie format");
+        }
 
         const body: any = {
             "cursor": cursor,
@@ -98,8 +171,14 @@ export const getLyricAlignment = async (songId: string, cookie: string): Promise
             "Content-Type": "application/json",
         };
 
-        const trimmedCookie = cookie.trim();
-        headers["Authorization"] = `Bearer ${trimmedCookie}`;
+        const auth = normalizeSunoAuth(cookie);
+        if (auth.bearerToken) {
+            headers["Authorization"] = `Bearer ${auth.bearerToken}`;
+        } else if (auth.cookie) {
+            headers["Cookie"] = auth.cookie;
+        } else {
+            throw new Error("Invalid Suno token/cookie format");
+        }
 
         const response = await fetch(ENDPOINT, {
             method: "GET",
@@ -128,8 +207,14 @@ export const getSunoClip = async (clipId: string, cookie: string): Promise<any> 
             "Content-Type": "application/json",
         };
 
-        const trimmedCookie = cookie.trim();
-        headers["Authorization"] = `Bearer ${trimmedCookie}`;
+        const auth = normalizeSunoAuth(cookie);
+        if (auth.bearerToken) {
+            headers["Authorization"] = `Bearer ${auth.bearerToken}`;
+        } else if (auth.cookie) {
+            headers["Cookie"] = auth.cookie;
+        } else {
+            throw new Error("Invalid Suno token/cookie format");
+        }
 
         const response = await fetch(ENDPOINT, {
             method: "GET",
@@ -157,7 +242,7 @@ export const triggerSunoGeneration = async (
   }
 
   // Use the proxy endpoint to avoid CORS issues and manage headers
-  const API_ENDPOINT = "https://sunoarchitect.xiliourt.ovh/api/suno-proxy";
+  const API_ENDPOINT = import.meta.env.VITE_SUNO_PROXY_URL || "/api/suno-proxy";
   
   // Normalize 0-100 to 0.0-1.0
   const weirdness = typeof data.weirdness === 'number' ? data.weirdness / 100 : 0.5;
@@ -193,15 +278,14 @@ export const triggerSunoGeneration = async (
     };
 
     // Handle Authentication
-    const trimmedCookie = cookie.trim();
-    
-    // Check if it's a Bearer token (JWT usually starts with ey...)
-    if (trimmedCookie.startsWith("ey")) {
-        headers["Authorization"] = `Bearer ${trimmedCookie}`;
+    const auth = normalizeSunoAuth(cookie);
+    if (auth.bearerToken) {
+        headers["Authorization"] = `Bearer ${auth.bearerToken}`;
+    } else if (auth.cookie) {
+        // The proxy converts X-Suno-Cookie to Cookie header server-side.
+        headers["X-Suno-Cookie"] = auth.cookie;
     } else {
-        // If it's not a Bearer token (e.g. session cookie), send as X-Suno-Cookie
-        // The proxy will convert this to the Cookie header
-        headers["X-Suno-Cookie"] = trimmedCookie;
+        throw new Error("Invalid Suno token/cookie format");
     }
 
     const response = await fetch(API_ENDPOINT, {
@@ -257,11 +341,13 @@ export const updateSunoMetadata = async (clipId: string, data: ParsedSunoOutput,
             "Content-Type": "application/json",
         };
 
-        const trimmedCookie = cookie.trim();
-        if (trimmedCookie.startsWith("ey")) {
-             headers["Authorization"] = `Bearer ${trimmedCookie}`;
+        const auth = normalizeSunoAuth(cookie);
+        if (auth.bearerToken) {
+             headers["Authorization"] = `Bearer ${auth.bearerToken}`;
+        } else if (auth.cookie) {
+             headers["X-Suno-Cookie"] = auth.cookie;
         } else {
-             headers["X-Suno-Cookie"] = trimmedCookie;
+             throw new Error("Invalid Suno token/cookie format");
         }
 
         const response = await fetch(PROXY_ENDPOINT, {

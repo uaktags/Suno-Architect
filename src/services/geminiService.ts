@@ -1,7 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { ParsedSunoOutput, AlignedWord, FileContext } from "../types";
+import { ParsedSunoOutput, AlignedWord, FileContext, AIProviderConfig, GenerateContentRequest } from "../types";
 import { GET_STRICT_OUTPUT_SUFFIX } from "../constants";
+import { createProvider, getDefaultModelForProvider } from "./providers/providerFactory";
 
 export const generateSunoPrompt = async (
   userInput: string, 
@@ -23,13 +24,11 @@ export const generateSunoPrompt = async (
       throw new Error("System Instruction is missing.");
   }
 
-  // Enforce strict output format for the requested number of tracks
   const finalSystemInstruction = `${systemInstruction}\n\n${GET_STRICT_OUTPUT_SUFFIX(numTracks)}`;
 
   try {
     const parts: any[] = [];
     
-    // Add multiple files to context
     let hasAudio = false;
     contextFiles.forEach(file => {
         const base64Data = file.data.includes(',') 
@@ -48,7 +47,6 @@ export const generateSunoPrompt = async (
         }
     });
 
-    // Add prompt hints based on content
     if (hasAudio) {
         parts.push({ text: `[CRITICAL: Audio files are provided as Style References. Analyze their tempo, instrumentation, genre, and production characteristics to influence the generated Suno prompt.]` });
     }
@@ -58,7 +56,6 @@ export const generateSunoPrompt = async (
         parts.push({ text: `[Context Files Provided: ${fileNames}]` });
     }
 
-    // Add user text prompt
     if (userInput) {
         parts.push({ text: `${userInput}\n\nPlease generate an album containing exactly ${numTracks} tracks based on this idea.` });
     } else if (contextFiles.length > 0) {
@@ -83,15 +80,93 @@ export const generateSunoPrompt = async (
   }
 };
 
+export const generateSunoPromptWithProvider = async (
+  userInput: string, 
+  providerConfig: AIProviderConfig,
+  systemInstruction?: string,
+  contextFiles: FileContext[] = [],
+  numTracks: number = 1
+): Promise<ParsedSunoOutput[]> => {
+  if (!systemInstruction) {
+      throw new Error("System Instruction is missing.");
+  }
+
+  const finalSystemInstruction = `${systemInstruction}\n\n${GET_STRICT_OUTPUT_SUFFIX(numTracks)}`;
+
+  try {
+    const provider = createProvider(providerConfig);
+
+    const parts: any[] = [];
+    
+    let hasAudio = false;
+    contextFiles.forEach(file => {
+        const base64Data = file.data.includes(',') 
+            ? file.data.split(',')[1] 
+            : file.data;
+            
+        parts.push({
+            inlineData: {
+                mimeType: file.mimeType,
+                data: base64Data
+            }
+        });
+        
+        if (file.mimeType.startsWith('audio/')) {
+            hasAudio = true;
+        }
+    });
+
+    if (hasAudio) {
+        parts.push({ text: `[CRITICAL: Audio files are provided as Style References. Analyze their tempo, instrumentation, genre, and production characteristics to influence the generated Suno prompt.]` });
+    }
+
+    if (contextFiles.length > 0) {
+        const fileNames = contextFiles.map(f => f.name).join(', ');
+        parts.push({ text: `[Context Files Provided: ${fileNames}]` });
+    }
+
+    if (userInput) {
+        parts.push({ text: `${userInput}\n\nPlease generate an album containing exactly ${numTracks} tracks based on this idea.` });
+    } else if (contextFiles.length > 0) {
+        parts.push({ text: `Generate a professional Suno AI album of exactly ${numTracks} tracks based on the provided context files.` });
+    }
+
+    const nonGeminiContent = parts
+      .map((part) => {
+        if (part.text) return part.text;
+        if (part.inlineData) return `[File: ${part.inlineData.mimeType}]`;
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n\n');
+
+    const request: GenerateContentRequest = {
+      model: providerConfig.model || getDefaultModelForProvider(providerConfig.type),
+      contents: providerConfig.type === 'gemini' ? JSON.stringify(parts) : nonGeminiContent,
+      systemInstruction: finalSystemInstruction,
+      temperature: 0.8,
+      timeoutMs: 60000,
+    };
+
+    const response = await provider.generateContent(request);
+
+    const text = response.text || "";
+    return parseMultipleResponses(text);
+  } catch (error: any) {
+    console.error("Provider API Error:", error);
+    const msg = error.name === 'AbortError'
+      ? "Provider request timed out after 60 seconds. Check provider settings/network and try again."
+      : (error.message || "Failed to generate prompt.");
+    throw new Error(msg);
+  }
+};
+
 const parseMultipleResponses = (fullText: string): ParsedSunoOutput[] => {
-  // Split the response by Track headers if possible
   const trackSplits = fullText.split(/--- TRACK \d+ ---/i).filter(s => s.trim().length > 10);
   
-  // If no clear track splits, try to parse everything as a continuous stream of blocks
   if (trackSplits.length === 0) {
     const allMatches = extractCodeBlocks(fullText);
     const results: ParsedSunoOutput[] = [];
-    // Each track has 6 blocks now (Style, Title, Exclude, Params, LyricsTags, Clean)
     for (let i = 0; i < allMatches.length; i += 6) {
         const chunk = allMatches.slice(i, i + 6);
         if (chunk.length >= 5) {
@@ -122,7 +197,7 @@ const constructParsedOutput = (matches: string[], rawText: string): ParsedSunoOu
     style: matches[0] || "",
     title: matches[1] || "",
     excludeStyles: matches[2] === "None" ? "" : (matches[2] || ""),
-    advancedParams: matches[3] || "", // Now in a code block
+    advancedParams: matches[3] || "",
     vocalGender: "None",
     weirdness: 50,
     styleInfluence: 50,
@@ -131,7 +206,6 @@ const constructParsedOutput = (matches: string[], rawText: string): ParsedSunoOu
     fullResponse: rawText,
   };
 
-  // Parse advanced params from block 3 or the raw text of the segment
   const paramSource = result.advancedParams || rawText;
   const paramLines = paramSource.split('\n').filter(line => 
     line.toLowerCase().includes('vocal gender') || 
@@ -190,7 +264,7 @@ export const getCleanAlignedWords = (aligned: AlignedWord[]): AlignedWord[] => {
             const next = clean[i];
             const currText = current.word.trim();
             const nextText = next.word.trim();
-            const isFragment = /['’]$/.test(currText) || /^['’]/.test(nextText) || /^['’]+$/.test(currText) || /^['’]+$/.test(nextText);
+            const isFragment = /['']+$/.test(currText) || /^['']/ .test(nextText) || /^['']+$/.test(currText) || /^['']+$/.test(nextText);
             const gap = next.start_s - current.end_s;
             if (isFragment && gap < 0.5) {
                 current = { ...current, word: currText + nextText, end_s: next.end_s };
@@ -218,7 +292,7 @@ export const stripMetaTags = (text: string): string => {
 export const cleanStringForMatch = (s: string) => {
     if (!s) return "";
     try {
-        return s.toLowerCase().replace(/['’]/g, '').replace(/[^\p{L}\p{N}]/gu, '');
+        return s.toLowerCase().replace(/['']/g, '').replace(/[^\p{L}\p{N}]/gu, '');
     } catch (e) {
         return s.toLowerCase().replace(/['".,/#!$%^&*;:{}=\-_`~()]/g, "");
     }
@@ -308,10 +382,6 @@ export const matchWordsToPrompt = (aligned: AlignedWord[], promptText: string): 
     return groups;
 };
 
-/**
- * Uses Gemini to group a flat list of aligned words into logical lines 
- * based on the provided lyrics text structure.
- */
 export const groupLyricsByLines = async (
   lyrics: string,
   aligned: AlignedWord[],

@@ -83,6 +83,68 @@ export interface FileContext {
   name: string;
 }
 
+export interface ReferenceSongInput {
+  id: string;
+  weight?: number;
+}
+
+export type AlbumObjectivePreset = 'standard' | 'append';
+
+export interface GenerationOptions {
+  references?: ReferenceSongInput[];
+  referencePlaylistIds?: string[];
+  preserveMotifs?: string[];
+  avoidMotifs?: string[];
+  objectivePreset?: AlbumObjectivePreset;
+}
+
 export type ViewMode = 'generator' | 'history' | 'visualizer';
 
 export type Qt6Style = 'wave' | 'bars' | 'circle' | 'circular-wave';
+
+export type ProviderType = 'gemini' | 'openrouter' | 'openapi';
+
+export interface AIProviderConfig {
+  type: ProviderType;
+  apiKey?: string;
+  baseUrl?: string;
+  model?: string;
+  headers?: Record<string, string>;
+  authHeader?: string;
+  authPrefix?: string;
+}
+
+export interface GenerateContentRequest {
+  model: string;
+  contents: string | unknown;
+  systemInstruction?: string;
+  temperature?: number;
+  responseMimeType?: string;
+  timeoutMs?: number;
+}
+
+export interface GenerateContentResponse {
+  text: string;
+}
+
+export interface AIProvider {
+  generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse>;
+  validateConfig(): boolean;
+  getAvailableModels(): Promise<string[]>;
+}
+
+export interface AlbumSongRef {
+  songId: string;
+  title?: string | null;
+  addedAt: string;
+  sortOrder: number;
+}
+
+export interface LibraryAlbum {
+  id: number;
+  name: string;
+  description?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  songs: AlbumSongRef[];
+}

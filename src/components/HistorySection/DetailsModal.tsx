@@ -3,6 +3,7 @@ import { SunoClip } from '../../types';
 import CopyButton from '../CopyButton';
 import { getLyricAlignment } from '../../services/sunoApi';
 import { matchWordsToPrompt, stripMetaTags, generateLrc, generateSrt } from '../../utils/lyrics';
+import { addSongToAlbum, createAlbum, getSongMeta, listAlbums, removeSongFromAlbum, setSongTags } from '../../services/libraryService';
 
 interface DetailsModalProps {
   clip: SunoClip;
@@ -19,12 +20,128 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
   // Loading States
   const [loadingAlignment, setLoadingAlignment] = useState(false);
   const [alignmentError, setAlignmentError] = useState<string | null>(null);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
+  const [libraryAlbums, setLibraryAlbums] = useState<Array<{ id: number; name: string }>>([]);
+  const [songAlbumIds, setSongAlbumIds] = useState<number[]>([]);
+  const [tagsInput, setTagsInput] = useState('');
+  const [selectedAlbumId, setSelectedAlbumId] = useState<number | ''>('');
+  const [newAlbumName, setNewAlbumName] = useState('');
+  const [savingLibrary, setSavingLibrary] = useState(false);
 
   useEffect(() => {
       const orig = clip.originalData;
       const text = orig?.lyricsAlone || orig?.lyricsWithTags || clip.metadata?.prompt || "";
       setEditedLyrics(text);
   }, [clip.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadLibraryData = async () => {
+      if (isDraft) return;
+      setLibraryLoading(true);
+      setLibraryError(null);
+      try {
+        const [albums, songMeta] = await Promise.all([listAlbums(), getSongMeta(clip.id)]);
+        if (cancelled) return;
+        setLibraryAlbums(albums.map((a) => ({ id: a.id, name: a.name })));
+        setSongAlbumIds((songMeta.albums || []).map((a) => a.id));
+        setTagsInput((songMeta.tags || []).join(', '));
+      } catch (error: any) {
+        if (!cancelled) {
+          setLibraryError(error?.message || 'Failed to load library metadata');
+        }
+      } finally {
+        if (!cancelled) {
+          setLibraryLoading(false);
+        }
+      }
+    };
+
+    loadLibraryData();
+    return () => {
+      cancelled = true;
+    };
+  }, [clip.id, isDraft]);
+
+  const parseTags = (raw: string): string[] =>
+    Array.from(
+      new Set(
+        raw
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      )
+    );
+
+  const handleSaveTags = async () => {
+    if (isDraft) return;
+    setSavingLibrary(true);
+    setLibraryError(null);
+    try {
+      await setSongTags(clip.id, parseTags(tagsInput));
+    } catch (error: any) {
+      setLibraryError(error?.message || 'Failed to save tags');
+    } finally {
+      setSavingLibrary(false);
+    }
+  };
+
+  const handleAddCurrentSongToAlbum = async () => {
+    if (isDraft || selectedAlbumId === '') return;
+    setSavingLibrary(true);
+    setLibraryError(null);
+    try {
+      await addSongToAlbum(Number(selectedAlbumId), clip.id, clip.title || clip.originalData?.title || 'Untitled');
+      if (!songAlbumIds.includes(Number(selectedAlbumId))) {
+        setSongAlbumIds((prev) => [...prev, Number(selectedAlbumId)]);
+      }
+    } catch (error: any) {
+      setLibraryError(error?.message || 'Failed to add song to album');
+    } finally {
+      setSavingLibrary(false);
+    }
+  };
+
+  const handleRemoveCurrentSongFromAlbum = async (albumId: number) => {
+    if (isDraft) return;
+    setSavingLibrary(true);
+    setLibraryError(null);
+    try {
+      await removeSongFromAlbum(albumId, clip.id);
+      setSongAlbumIds((prev) => prev.filter((id) => id !== albumId));
+    } catch (error: any) {
+      setLibraryError(error?.message || 'Failed to remove song from album');
+    } finally {
+      setSavingLibrary(false);
+    }
+  };
+
+  const handleCreateAlbumAndAddSong = async () => {
+    const name = newAlbumName.trim();
+    if (!name || isDraft) return;
+    setSavingLibrary(true);
+    setLibraryError(null);
+    try {
+      await createAlbum(name);
+      const albums = await listAlbums();
+      const mapped = albums.map((a) => ({ id: a.id, name: a.name }));
+      setLibraryAlbums(mapped);
+      const created = mapped.find((a) => a.name === name);
+      if (created) {
+        await addSongToAlbum(created.id, clip.id, clip.title || clip.originalData?.title || 'Untitled');
+        if (!songAlbumIds.includes(created.id)) {
+          setSongAlbumIds((prev) => [...prev, created.id]);
+        }
+        setSelectedAlbumId(created.id);
+      }
+      setNewAlbumName('');
+    } catch (error: any) {
+      setLibraryError(error?.message || 'Failed to create album');
+    } finally {
+      setSavingLibrary(false);
+    }
+  };
 
   const handleLinkSunoId = () => {
     if (!manualIdInput.trim()) return;
@@ -484,6 +601,110 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                         If you generated this song on Suno, paste the UUID from the URL to see the cover art and link.
                     </p>
                 </div>
+
+                {!isDraft && (
+                  <div className="pt-4 border-t border-slate-800 space-y-3">
+                    <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Album Builder</h3>
+                    {libraryLoading ? (
+                      <p className="text-xs text-slate-500">Loading album metadata...</p>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-[11px] text-slate-400 font-semibold">Song Tags (comma-separated)</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={tagsInput}
+                              onChange={(e) => setTagsInput(e.target.value)}
+                              placeholder="anthemic, dark-pop, synthwave"
+                              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
+                            />
+                            <button
+                              onClick={handleSaveTags}
+                              disabled={savingLibrary}
+                              className="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg disabled:opacity-60"
+                            >
+                              Save Tags
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[11px] text-slate-400 font-semibold">Add Song To Existing Album</label>
+                          <div className="flex gap-2">
+                            <select
+                              value={selectedAlbumId}
+                              onChange={(e) => setSelectedAlbumId(e.target.value ? Number(e.target.value) : '')}
+                              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
+                            >
+                              <option value="">Select album</option>
+                              {libraryAlbums.map((album) => (
+                                <option key={album.id} value={album.id}>
+                                  {album.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={handleAddCurrentSongToAlbum}
+                              disabled={savingLibrary || selectedAlbumId === ''}
+                              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-lg disabled:opacity-60"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[11px] text-slate-400 font-semibold">Create New Album And Add Song</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newAlbumName}
+                              onChange={(e) => setNewAlbumName(e.target.value)}
+                              placeholder="Neon Tides Act II"
+                              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
+                            />
+                            <button
+                              onClick={handleCreateAlbumAndAddSong}
+                              disabled={savingLibrary || !newAlbumName.trim()}
+                              className="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg disabled:opacity-60"
+                            >
+                              Create + Add
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[11px] text-slate-400 font-semibold">Current Album Membership</label>
+                          {songAlbumIds.length === 0 ? (
+                            <p className="text-xs text-slate-500">Not assigned to any album yet.</p>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {songAlbumIds.map((albumId) => {
+                                const album = libraryAlbums.find((a) => a.id === albumId);
+                                if (!album) return null;
+                                return (
+                                  <button
+                                    key={albumId}
+                                    onClick={() => handleRemoveCurrentSongFromAlbum(albumId)}
+                                    disabled={savingLibrary}
+                                    className="text-xs px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-200 hover:bg-red-900/30 hover:border-red-800 hover:text-red-300 disabled:opacity-60"
+                                    title="Click to remove from album"
+                                  >
+                                    {album.name} x
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {libraryError && (
+                      <p className="text-xs text-red-400 bg-red-900/20 border border-red-900/30 rounded p-2">{libraryError}</p>
+                    )}
+                  </div>
+                )}
 
             </div>
 

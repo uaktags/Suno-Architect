@@ -3,15 +3,26 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import InputSection from './components/InputSection/InputSection';
 import OutputSection from './components/OutputSection/OutputSection';
 import { Header } from './components/Header';
-import { generateSunoPrompt } from './services/geminiService';
-import { GenerationState, SunoClip, ParsedSunoOutput, PromptSettings, ViewMode, FileContext } from './types';
+import { generateSunoPromptWithProvider } from './services/geminiService';
+import { GenerationState, SunoClip, ParsedSunoOutput, PromptSettings, ViewMode, FileContext, AIProviderConfig, GenerationOptions } from './types';
 import { DEFAULT_SUNO_LIBRARY, DEFAULT_LYRICAL_CONSTRAINTS, buildKnowledgeBase, GET_PROMPT_V1 } from './constants';
 import Footer from './components/Footer';
 import SunoSettingsModal from './components/SunoSettingsModal';
-import { getSunoCredits, updateSunoMetadata, getSunoFeed } from './services/sunoApi';
+import { ProviderSettingsModal } from './components/ProviderSettingsModal';
+import { getSunoCredits, updateSunoMetadata, getSunoFeed, getSunoClip, getSunoPlaylist } from './services/sunoApi';
 import HistorySection from './components/HistorySection/HistorySection';
 import VisualizerSection from './components/VisualizerSection/VisualizerSection';
 import { stripMetaTags } from './utils/lyrics';
+import { validateProviderConfig, getDefaultModelForProvider, getMaxTracksForProvider } from './services/providers/providerFactory';
+import {
+  ApiKeyStorageMode,
+  getApiKeyForProvider,
+  getApiKeyStorageMode,
+  getEnvApiKeyForProvider,
+  saveApiKeyForProvider,
+  setApiKeyStorageMode,
+} from './utils/apiKeyStorage';
+import { deleteServerApiKey, getServerApiKey, setServerApiKey } from './services/keyVaultService';
 
 // Helper to map API response to SunoClip
 const mapSunoClip = (clip: any): SunoClip => {
@@ -77,13 +88,53 @@ const App: React.FC = () => {
   const [customApiKey, setCustomApiKey] = useState('');
   const [isKeyValid, setIsKeyValid] = useState(false);
   
+  const [providerConfig, setProviderConfig] = useState<AIProviderConfig>(() => {
+    try {
+      const saved = localStorage.getItem('ai_provider_config');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.type) {
+          const providerType = parsed.type as 'gemini' | 'openrouter' | 'openapi';
+          
+          if (parsed.baseUrl) {
+            parsed.baseUrl = parsed.baseUrl.replace(/\/+$/, '');
+          }
+          
+          return {
+            ...parsed,
+            apiKey: undefined,
+            model: parsed.model || getDefaultModelForProvider(providerType),
+          };
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse provider config from localStorage", e);
+    }
+    
+    return {
+      type: 'gemini',
+      apiKey: undefined,
+      model: getDefaultModelForProvider('gemini'),
+    };
+  });
+
+  const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
+  const [keyStorageModes, setKeyStorageModes] = useState<Record<'gemini' | 'openrouter' | 'openapi', ApiKeyStorageMode>>(() => ({
+    gemini: getApiKeyStorageMode('gemini'),
+    openrouter: getApiKeyStorageMode('openrouter'),
+    openapi: getApiKeyStorageMode('openapi'),
+  }));
+
   const [geminiModel, setGeminiModel] = useState<string>(() => {
-      return localStorage.getItem('gemini_model') || 'gemini-3-flash-preview';
+      return localStorage.getItem('gemini_model') || providerConfig.model || 'gemini-3-flash-preview';
   });
 
   const handleGeminiModelChange = (model: string) => {
       setGeminiModel(model);
       localStorage.setItem('gemini_model', model);
+      if (providerConfig.type === 'gemini') {
+        setProviderConfig({ ...providerConfig, model });
+      }
   };
   
   const [isSunoModalOpen, setIsSunoModalOpen] = useState(false);
@@ -136,6 +187,68 @@ const App: React.FC = () => {
   useEffect(() => {
       localStorage.setItem('suno_prompt_settings', JSON.stringify(promptSettings));
   }, [promptSettings]);
+
+  useEffect(() => {
+      let cancelled = false;
+
+      const loadProviderApiKey = async () => {
+        const providerType = providerConfig.type;
+        const storageMode = keyStorageModes[providerType] || 'client';
+        const localApiKey = getApiKeyForProvider(providerType);
+        const envApiKey = getEnvApiKeyForProvider(providerType);
+        let serverApiKey: string | undefined;
+
+        if (storageMode === 'server' || storageMode === 'both') {
+          try {
+            serverApiKey = await getServerApiKey(providerType);
+          } catch (error) {
+            console.warn(`Failed to load server key for ${providerType}`, error);
+          }
+        }
+
+        const resolvedApiKey =
+          storageMode === 'server'
+            ? serverApiKey || envApiKey
+            : storageMode === 'both'
+              ? serverApiKey || localApiKey || envApiKey
+              : localApiKey || envApiKey;
+
+        if (!cancelled) {
+          setProviderConfig(prev => {
+            if (prev.type !== providerType || prev.apiKey === resolvedApiKey) return prev;
+            return { ...prev, apiKey: resolvedApiKey };
+          });
+        }
+      };
+
+      loadProviderApiKey();
+
+      return () => {
+        cancelled = true;
+      };
+  }, [providerConfig.type, keyStorageModes]);
+
+  useEffect(() => {
+      const configToSave = {
+        ...providerConfig,
+        apiKey: undefined,
+      };
+      localStorage.setItem('ai_provider_config', JSON.stringify(configToSave));
+
+      if (providerConfig.type === 'openapi') {
+        const openApiSettings = {
+          baseUrl: providerConfig.baseUrl,
+          authHeader: providerConfig.authHeader,
+          authPrefix: providerConfig.authPrefix,
+        };
+        localStorage.setItem('ai_provider_openapi_settings', JSON.stringify(openApiSettings));
+      }
+  }, [providerConfig]);
+
+  useEffect(() => {
+      const isValid = validateProviderConfig(providerConfig);
+      setIsKeyValid(isValid);
+  }, [providerConfig]);
 
   const mergeClips = (newClips: SunoClip[]) => {
       setHistory(prev => {
@@ -295,16 +408,139 @@ const App: React.FC = () => {
     });
   };
 
-  const handleGenerate = async (prompt: string, files: FileContext[] = [], numTracks: number = 1) => {
+  const handleGenerate = async (
+    prompt: string,
+    files: FileContext[] = [],
+    numTracks: number = 1,
+    options: GenerationOptions = {}
+  ) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null, result: null }));
     try {
-      const results = await generateSunoPrompt(
-          prompt, 
-          customApiKey, 
+      const config: AIProviderConfig = {
+        ...providerConfig,
+        apiKey: customApiKey ? customApiKey : providerConfig.apiKey,
+        model: providerConfig.model || getDefaultModelForProvider(providerConfig.type),
+      };
+
+      if (!validateProviderConfig(config)) {
+        throw new Error(`Invalid ${config.type} configuration. Please check your API key and settings.`);
+      }
+
+      const maxTracks = getMaxTracksForProvider(config);
+      const safeNumTracks = Math.min(Math.max(1, numTracks), maxTracks);
+      if (numTracks > maxTracks) {
+        throw new Error(
+          `Selected model supports up to ${maxTracks} tracks in one request. Please lower track count or choose a higher-context OpenRouter model.`
+        );
+      }
+
+      const referenceSongIds = options.references?.map((r) => r.id) || [];
+      const referencePlaylistIds = options.referencePlaylistIds || [];
+      let finalPrompt = prompt;
+      let validReferenceIds = Array.from(
+        new Set(
+          referenceSongIds.filter((id) =>
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+          )
+        )
+      );
+
+      if (referenceSongIds.length > 0 && validReferenceIds.length === 0 && referencePlaylistIds.length === 0) {
+        throw new Error("No valid Suno IDs detected. Use UUID format for reference songs.");
+      }
+
+      if (referencePlaylistIds.length > 0) {
+        const playlistResults = await Promise.allSettled(
+          referencePlaylistIds.map((playlistId) => getSunoPlaylist(playlistId, sunoCookie))
+        );
+
+        const playlistSongIds = playlistResults
+          .flatMap((item) => {
+            if (item.status !== 'fulfilled') return [];
+            const clips = Array.isArray(item.value?.playlist_clips) ? item.value.playlist_clips : [];
+            return clips
+              .map((entry: any) => entry?.clip?.id)
+              .filter((id: any) => typeof id === 'string');
+          });
+
+        validReferenceIds = Array.from(new Set([...validReferenceIds, ...playlistSongIds]));
+      }
+
+      if (validReferenceIds.length > 0) {
+        if (!sunoCookie) {
+          throw new Error("Suno token required to import reference songs by ID. Connect Suno in Settings first.");
+        }
+
+        const resolved = await Promise.allSettled(
+          validReferenceIds.map((id) => getSunoClip(id, sunoCookie))
+        );
+
+        const references = resolved
+          .map((item, idx) => ({ item, id: validReferenceIds[idx] }))
+          .filter((x): x is { item: PromiseFulfilledResult<any>; id: string } => x.item.status === 'fulfilled')
+          .map(({ item, id }) => {
+            const clip = item.value || {};
+            const metadata = clip.metadata || {};
+            const lyrics = (metadata.prompt || '').slice(0, 2200);
+            const configuredWeight = options.references?.find((r) => r.id === id)?.weight;
+            return [
+              `Reference Song ID: ${id}`,
+              `Influence Weight: ${configuredWeight ?? 'auto'}`,
+              `Title: ${clip.title || 'Untitled'}`,
+              `Style/Tags: ${metadata.tags || 'N/A'}`,
+              `Negative Tags: ${metadata.negative_tags || 'N/A'}`,
+              `Lyrics/Prompt Source:`,
+              lyrics || 'N/A',
+            ].join('\n');
+          });
+
+        if (references.length === 0) {
+          throw new Error("Failed to load reference songs from provided IDs.");
+        }
+
+        const refBlock = [
+          "REFERENCE SONG CONTEXT (for style and continuity guidance only):",
+          "Do not copy lyrics verbatim. Preserve thematic continuity, progression, and stylistic DNA.",
+          options.objectivePreset === 'append'
+            ? `OBJECTIVE: Append exactly ${safeNumTracks} new tracks after the referenced material. Treat references as prior released tracks and continue their arc with fresh compositions.`
+            : "OBJECTIVE: Generate a cohesive set of tracks guided by references and user prompt.",
+          options.preserveMotifs && options.preserveMotifs.length > 0
+            ? `PRESERVE MOTIFS: ${options.preserveMotifs.join(', ')}`
+            : '',
+          options.avoidMotifs && options.avoidMotifs.length > 0
+            ? `AVOID MOTIFS: ${options.avoidMotifs.join(', ')}`
+            : '',
+          ...references.map((r, idx) => `--- REFERENCE ${idx + 1} ---\n${r}`),
+        ].filter(Boolean).join('\n\n');
+
+        finalPrompt = [prompt, refBlock].filter(Boolean).join('\n\n');
+      }
+
+      if (options.objectivePreset === 'append' && validReferenceIds.length === 0) {
+        throw new Error("Append mode requires at least one valid reference Suno ID.");
+      }
+
+      if (validReferenceIds.length === 0) {
+        const directiveBlock = [
+          options.preserveMotifs && options.preserveMotifs.length > 0
+            ? `PRESERVE MOTIFS: ${options.preserveMotifs.join(', ')}`
+            : '',
+          options.avoidMotifs && options.avoidMotifs.length > 0
+            ? `AVOID MOTIFS: ${options.avoidMotifs.join(', ')}`
+            : '',
+        ].filter(Boolean).join('\n');
+
+        if (directiveBlock) {
+          finalPrompt = [prompt, directiveBlock].filter(Boolean).join('\n\n');
+        }
+      }
+
+      const results = await generateSunoPromptWithProvider(
+          finalPrompt, 
+          config, 
           promptSettings.customSystemPrompt, 
-          geminiModel, 
           files,
-          numTracks
+          safeNumTracks
       );
       
       setState({ isLoading: false, error: null, result: results });
@@ -365,8 +601,7 @@ const App: React.FC = () => {
                     history={history}
                     sunoCookie={sunoCookie}
                     onUpdateClip={handleUpdateClip}
-                    apiKey={customApiKey}
-                    geminiModel={geminiModel} 
+                    providerConfig={providerConfig}
                   />
               );
           case 'generator':
@@ -378,14 +613,17 @@ const App: React.FC = () => {
                         <div className="mb-6">
                             <h2 className="text-3xl font-bold text-white mb-2">Architect Your Album</h2>
                             <p className="text-slate-400 text-sm leading-relaxed">
-                                Transform raw ideas into structured albums (up to 7 tracks). 
+                                Transform raw ideas into structured albums (up to {getMaxTracksForProvider(providerConfig)} tracks). 
                                 Generates cohesive prompts with production directives for Suno & Udio.
                             </p>
                         </div>
-                        <InputSection 
+                         <InputSection 
                             onGenerate={handleGenerate} 
                             isLoading={state.isLoading} 
-                            apiKeyValid={isKeyValid} 
+                            apiKeyValid={isKeyValid}
+                            providerConfig={providerConfig}
+                            onProviderConfigChange={setProviderConfig}
+                            onOpenProviderSettings={() => setIsProviderModalOpen(true)}
                         />
                         {state.error && (
                             <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-200 text-sm">
@@ -434,15 +672,17 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#0f172a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-[#0f172a] to-black text-slate-200 font-sans selection:bg-purple-500/30">
       
-      <Header 
+       <Header 
         onKeyUpdate={setCustomApiKey} 
         onValidationChange={setIsKeyValid}
         onOpenSunoSettings={() => setIsSunoModalOpen(true)}
+        onOpenProviderSettings={() => setIsProviderModalOpen(true)}
         sunoCredits={sunoCredits}
         sunoModel={sunoModel}
         onModelChange={handleModelChange}
         geminiModel={geminiModel}
         onGeminiModelChange={handleGeminiModelChange}
+        providerConfig={providerConfig}
       />
 
       <SunoSettingsModal 
@@ -453,6 +693,64 @@ const App: React.FC = () => {
         initialModel={sunoModel}
         initialPromptSettings={promptSettings}
         currentCredits={sunoCredits}
+      />
+
+      <ProviderSettingsModal
+        isOpen={isProviderModalOpen}
+        onClose={() => setIsProviderModalOpen(false)}
+        onSave={async (config, storageMode) => {
+          const trimmedApiKey = config.apiKey?.trim() || undefined;
+          const providerType = config.type;
+
+          if (storageMode === 'client' || storageMode === 'both') {
+            saveApiKeyForProvider(providerType, trimmedApiKey);
+          } else {
+            saveApiKeyForProvider(providerType, undefined);
+          }
+
+          if (storageMode === 'server' || storageMode === 'both') {
+            if (trimmedApiKey) {
+              await setServerApiKey(providerType, trimmedApiKey);
+            } else {
+              await deleteServerApiKey(providerType);
+            }
+          } else {
+            await deleteServerApiKey(providerType).catch((err) => {
+              console.warn(`Failed clearing server key for ${providerType}`, err);
+            });
+          }
+
+          setApiKeyStorageMode(providerType, storageMode);
+          setKeyStorageModes(prev => ({ ...prev, [providerType]: storageMode }));
+
+          if (config.type === 'openapi') {
+            try {
+              const savedOpenApi = localStorage.getItem('ai_provider_openapi_settings');
+              if (savedOpenApi) {
+                const parsed = JSON.parse(savedOpenApi);
+                config = {
+                  ...config,
+                  baseUrl: config.baseUrl || parsed.baseUrl,
+                  authHeader: config.authHeader || parsed.authHeader,
+                  authPrefix: config.authPrefix !== undefined ? config.authPrefix : parsed.authPrefix,
+                };
+              }
+            } catch (e) {
+              console.warn("Failed to load saved OpenAPI settings", e);
+            }
+          }
+
+          setProviderConfig({
+            ...config,
+            apiKey: trimmedApiKey,
+          });
+
+          if (config.type === 'gemini' && config.model) {
+            setGeminiModel(config.model);
+          }
+        }}
+        initialConfig={providerConfig}
+        initialStorageMode={keyStorageModes[providerConfig.type] || 'client'}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full flex justify-center">

@@ -150,6 +150,29 @@ Lyrics text...
 Do not include any conversational text between tracks. Use the exact "--- TRACK [N] ---" header before each track set.
 `;
 
+export const ADVANCED_ALBUM_PLAYBOOK = `
+## Album Composition Playbook (High Priority)
+1. Build an arc across tracks:
+   - Track 1: identity statement (core palette)
+   - Middle tracks: variation + contrast (tempo, groove, instrumentation, vocal register)
+   - Final track: payoff/resolution with thematic callback
+2. Tag layering strategy:
+   - Combine [Genre], [Mood], [Era/Texture], [Rhythm/Tempo], [Production] with clear intent.
+   - Keep tags specific and avoid contradictory over-tagging.
+3. Section-aware arrangement:
+   - Use distinct section behaviors (e.g., sparse verse, denser chorus, harmonic/rhythmic release in bridge).
+   - Introduce at least one arrangement novelty per track (breakdown, stop-time, half-time, stripped reprise, harmonic pivot).
+4. Vocal/lyric realism:
+   - Favor concrete imagery and physical details over abstract cliches.
+   - Keep hooks concise and singable; vary cadence and line length.
+5. Production direction:
+   - Use production tags as intentional constraints (stereo width, saturation, reverb profile, transient character).
+   - Specify negative tags to protect identity and avoid stylistic drift.
+6. Reference-aware generation:
+   - If reference songs are supplied, inherit palette and narrative continuity without copying lyrics.
+   - Preserve identity markers (motifs, tonal center tendencies, recurring phrases), but write fresh lines.
+`;
+
 /**
  * V1: The Classic Architect Prompt
  */
@@ -164,12 +187,15 @@ You are an expert Suno AI Prompt Engineer. Your goal is to assist users in creat
 4. **Creative Rewriting:** Converting ideas into rhythmic, rhyming lyrics.
 5. **Knowledge & Key Tag Reference**: 
 ${knowledgeBase}
+6. **Advanced Album Workflow Playbook**:
+${ADVANCED_ALBUM_PLAYBOOK}
 
 **Guidelines:**
 * Ensure tags in Block 1 are relevant to Suno (Genre, BPM, Mood).
 * If generating an album, ensure thematic consistency across tracks while varying tempos and keys.
 * If the user provides context, adapt the tone accordingly.
 * Do not use [cite] tags.
+* Do not intentionally write duets or multi-singer roleplay sections; prefer one lead vocalist with optional backing vocals only.
 `;
 
 /**
@@ -202,6 +228,8 @@ Do NOT use the following, as they trigger "AI-detection" in listeners:
 - **Prompting:** Use the users prompts for lyrics influence and styling. 
 - Output style should be similiar to user suggestions 
 - Output lyrics guided by the user prompt.
+- Apply this advanced workflow playbook:
+${ADVANCED_ALBUM_PLAYBOOK}
 `;
 
 /**
@@ -300,6 +328,8 @@ You are an expert Suno AI Prompt Engineer. Your goal is to assist users in creat
 4. **Creative Rewriting:** Converting ideas into rhythmic, rhyming lyrics.
 5. **Knowledge & Key Tag Reference**: 
 ${STATIC_KB_V3}
+6. **Advanced Album Workflow Playbook**:
+${ADVANCED_ALBUM_PLAYBOOK}
 
 **Guidelines:**
 * Ensure tags in Block 1 are relevant to Suno (Genre, BPM, Mood).
@@ -308,4 +338,5 @@ ${STATIC_KB_V3}
 * Do not use [cite] tags.
 * Use [tags] in lyrics to influence sound, guided by the users prompt. Do not put tags in (), only in [].
 * Use () only for backing vocals - not for tags.
+* Do not intentionally write duets or multi-singer roleplay sections; keep one clear lead vocal perspective.
 `;

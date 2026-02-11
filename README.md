@@ -37,5 +37,20 @@
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/xiliourt/Suno-Architect/)
 - Requires the worker to forward Suno generation requests and avoid cors issues, all other API end points seem to work fine.
 
+## Authentication & Access Control
+- The worker now protects `/api/suno-proxy` behind app authentication.
+- Auth endpoints:
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `POST /api/auth/logout`
+  - `GET /api/auth/me`
+- Sessions are persisted in SQLite when a D1 `DB` binding is present.
+- If no `DB` binding exists, the worker uses in-memory user/session storage (non-persistent).
+
+### Recommended production setup
+1. Bind a D1 database as `DB` in Wrangler.
+2. Serve the app behind HTTPS.
+3. Keep `VITE_SUNO_PROXY_URL=/api/suno-proxy` so proxy calls stay on your protected domain.
+
 ## Credits
 - [https://github.com/gcui-art/suno-api/](https://github.com/gcui-art/suno-api/) has reverse engineered most of the API already, so I didn't need to do it myself. Only took some tweaking, none of the code is directly use but it sure helped speeding up understanding the API. Also has interfaces and types to know what response to expect from the API - very helpful.
