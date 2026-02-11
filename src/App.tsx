@@ -13,6 +13,7 @@ import { getSunoCredits, updateSunoMetadata, getSunoFeed, getSunoClip, getSunoPl
 import HistorySection from './components/HistorySection/HistorySection';
 import VisualizerSection from './components/VisualizerSection/VisualizerSection';
 import AlbumsSection from './components/AlbumsSection/AlbumsSection';
+import WebAudioMasterSection from './components/WebAudioMasterSection';
 import { stripMetaTags } from './utils/lyrics';
 import { validateProviderConfig, getDefaultModelForProvider, getMaxTracksForProvider } from './services/providers/providerFactory';
 import {
@@ -607,6 +608,8 @@ const App: React.FC = () => {
               );
           case 'albums':
               return <AlbumsSection history={history} />;
+          case 'web-audio-master':
+              return <WebAudioMasterSection />;
           case 'generator':
           default:
               return (
@@ -757,7 +760,7 @@ const App: React.FC = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full flex justify-center">
-          <div className="bg-slate-800/50 p-1 rounded-xl flex space-x-1 border border-slate-700/50 backdrop-blur-sm">
+          <div className="bg-slate-800/50 p-1 rounded-xl flex space-x-1 border border-slate-700/50 backdrop-blur-sm overflow-x-auto">
              <button
                 onClick={() => setView('generator')}
                 className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -806,6 +809,16 @@ const App: React.FC = () => {
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                 </svg>
                 <span>Visualizer</span>
+             </button>
+             <button
+                onClick={() => setView('web-audio-master')}
+                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                    view === 'web-audio-master'
+                    ? 'bg-slate-700 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                }`}
+             >
+                <span>Web-Audio-Master</span>
              </button>
           </div>
       </div>
