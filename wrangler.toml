@@ -10,3 +10,11 @@ binding = "ASSETS"
 # Observability (Useful for debugging proxy issues)
 [observability]
 enabled = true
+
+[[d1_databases]]
+binding = "suno_architect_auth"
+database_name = "suno-architect-auth"
+database_id = "1e134692-cce7-410a-8cd7-8afa1556436e"
+
+[vars]
+ALLOW_REGISTRATION = "false"

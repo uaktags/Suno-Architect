@@ -1,32 +1,119 @@
 
-import React, { useState } from 'react';
-import { FileContext } from '../../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FileContext, AIProviderConfig, GenerationOptions, ReferenceSongInput, AlbumObjectivePreset } from '../../types';
 import FileUploader from './FileUploader';
 import TrackSelector from './TrackSelector';
 import ApiKeyModal from '../ApiKeyModal';
+import { ProviderSwitcher } from '../ProviderSwitcher';
+import { getMaxTracksForProvider } from '../../services/providers/providerFactory';
+import { extractSunoPlaylistId } from '../../services/sunoApi';
 
 interface InputSectionProps {
-  onGenerate: (prompt: string, files: FileContext[], numTracks: number) => void;
+  onGenerate: (prompt: string, files: FileContext[], numTracks: number, options?: GenerationOptions) => void;
   isLoading: boolean;
   apiKeyValid: boolean;
+  providerConfig?: AIProviderConfig;
+  onProviderConfigChange?: (config: AIProviderConfig) => void;
+  onOpenProviderSettings?: () => void;
 }
 
-const InputSection: React.FC<InputSectionProps> = ({ onGenerate, isLoading, apiKeyValid }) => {
+const InputSection: React.FC<InputSectionProps> = ({
+  onGenerate,
+  isLoading,
+  apiKeyValid,
+  providerConfig,
+  onProviderConfigChange,
+  onOpenProviderSettings
+}) => {
   const [prompt, setPrompt] = useState('');
   const [numTracks, setNumTracks] = useState(1);
   const [selectedFiles, setSelectedFiles] = useState<FileContext[]>([]);
+  const [referenceIdsInput, setReferenceIdsInput] = useState('');
+  const [referencePlaylistsInput, setReferencePlaylistsInput] = useState('');
+  const [objectivePreset, setObjectivePreset] = useState<AlbumObjectivePreset>('standard');
+  const [preserveMotifsInput, setPreserveMotifsInput] = useState('');
+  const [avoidMotifsInput, setAvoidMotifsInput] = useState('');
   const [showKeyModal, setShowKeyModal] = useState(false);
+
+  const maxTracks = useMemo(
+    () => getMaxTracksForProvider(providerConfig),
+    [providerConfig]
+  );
+
+  const references = useMemo<ReferenceSongInput[]>(() => {
+    const tokens = referenceIdsInput
+      .split(/[\s,]+/)
+      .map((token) => token.trim())
+      .filter(Boolean);
+
+    const parsed: ReferenceSongInput[] = [];
+    tokens.forEach((token) => {
+      const match = token.match(
+        /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[:@](\d{1,3}))?$/i
+      );
+      if (!match) return;
+      const [, id, weightRaw] = match;
+      const weight = weightRaw ? Math.min(100, Math.max(1, parseInt(weightRaw, 10))) : undefined;
+      parsed.push({ id, weight });
+    });
+
+    return parsed;
+  }, [referenceIdsInput]);
+
+  const preserveMotifs = useMemo(
+    () =>
+      preserveMotifsInput
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+    [preserveMotifsInput]
+  );
+
+  const avoidMotifs = useMemo(
+    () =>
+      avoidMotifsInput
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+    [avoidMotifsInput]
+  );
+
+  const referencePlaylistIds = useMemo(
+    () =>
+      referencePlaylistsInput
+        .split(/[\s,]+/)
+        .map((token) => extractSunoPlaylistId(token))
+        .filter((v): v is string => !!v),
+    [referencePlaylistsInput]
+  );
+
+  useEffect(() => {
+    if (numTracks > maxTracks) {
+      setNumTracks(maxTracks);
+    }
+  }, [maxTracks, numTracks]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!apiKeyValid) {
+        if (onOpenProviderSettings) {
+          onOpenProviderSettings();
+          return;
+        }
         setShowKeyModal(true);
         return;
     }
 
-    if ((prompt.trim() || selectedFiles.length > 0)) {
-      onGenerate(prompt, selectedFiles, numTracks);
+    if ((prompt.trim() || selectedFiles.length > 0 || references.length > 0 || referencePlaylistIds.length > 0)) {
+      const options: GenerationOptions = {
+        references,
+        referencePlaylistIds,
+        preserveMotifs,
+        avoidMotifs,
+        objectivePreset,
+      };
+      onGenerate(prompt, selectedFiles, Math.min(numTracks, maxTracks), options);
     }
   };
 
@@ -53,7 +140,8 @@ const InputSection: React.FC<InputSectionProps> = ({ onGenerate, isLoading, apiK
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const isButtonDisabled = isLoading || (!prompt.trim() && selectedFiles.length === 0);
+  const isButtonDisabled =
+    isLoading || (!prompt.trim() && selectedFiles.length === 0 && references.length === 0 && referencePlaylistIds.length === 0);
 
   return (
     <>
@@ -76,7 +164,25 @@ const InputSection: React.FC<InputSectionProps> = ({ onGenerate, isLoading, apiK
             />
             </div>
 
-            <TrackSelector numTracks={numTracks} onChange={setNumTracks} />
+            <TrackSelector numTracks={numTracks} maxTracks={maxTracks} onChange={setNumTracks} />
+            {numTracks > maxTracks && (
+              <p className="text-xs text-yellow-300">
+                Current provider/model supports up to {maxTracks} tracks in one generation.
+              </p>
+            )}
+
+            {providerConfig && onProviderConfigChange && onOpenProviderSettings && (
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">
+                    AI Provider
+                </label>
+                <ProviderSwitcher
+                  providerConfig={providerConfig}
+                  onConfigChange={onProviderConfigChange}
+                  onOpenSettings={onOpenProviderSettings}
+                />
+              </div>
+            )}
 
             <FileUploader 
                 selectedFiles={selectedFiles} 
@@ -84,6 +190,86 @@ const InputSection: React.FC<InputSectionProps> = ({ onGenerate, isLoading, apiK
                 onRemoveFile={removeFile} 
                 isLoading={isLoading} 
             />
+
+            <div>
+              <label htmlFor="referenceSongIds" className="block text-sm font-medium text-slate-400 mb-2">
+                Reference Existing Suno Songs (optional, supports weighting)
+              </label>
+              <textarea
+                id="referenceSongIds"
+                value={referenceIdsInput}
+                onChange={(e) => setReferenceIdsInput(e.target.value)}
+                disabled={isLoading}
+                placeholder="UUID, UUID:70, UUID:30 (comma/space/newline separated)"
+                className="w-full h-24 bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all resize-none"
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Format: <code>songId</code> or <code>songId:weight</code>. Weights are 1-100 and bias influence per reference.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="referencePlaylists" className="block text-sm font-medium text-slate-400 mb-2">
+                Reference Suno Playlists (optional)
+              </label>
+              <textarea
+                id="referencePlaylists"
+                value={referencePlaylistsInput}
+                onChange={(e) => setReferencePlaylistsInput(e.target.value)}
+                disabled={isLoading}
+                placeholder="Paste playlist URL(s) or playlist ID(s), comma/space/newline separated"
+                className="w-full h-20 bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Album Objective</label>
+                <select
+                  value={objectivePreset}
+                  onChange={(e) => setObjectivePreset(e.target.value as AlbumObjectivePreset)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                >
+                  <option value="standard">Standard Album Generation</option>
+                  <option value="append">Append New Tracks to Referenced Album</option>
+                </select>
+                {objectivePreset === 'append' && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    Generates exactly the selected number of new tracks as continuation material after your references.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="preserveMotifs" className="block text-sm font-medium text-slate-400 mb-2">
+                  Preserve Motifs (optional)
+                </label>
+                <input
+                  id="preserveMotifs"
+                  type="text"
+                  value={preserveMotifsInput}
+                  onChange={(e) => setPreserveMotifsInput(e.target.value)}
+                  disabled={isLoading}
+                  placeholder="e.g. neon coast, whispered pre-hook, 128 BPM pulse"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="avoidMotifs" className="block text-sm font-medium text-slate-400 mb-2">
+                  Avoid Motifs (optional)
+                </label>
+                <input
+                  id="avoidMotifs"
+                  type="text"
+                  value={avoidMotifsInput}
+                  onChange={(e) => setAvoidMotifsInput(e.target.value)}
+                  disabled={isLoading}
+                  placeholder="e.g. trap hi-hat rolls, choir stacks, guitar solos"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                />
+              </div>
+            </div>
 
             <div className="relative group">
                 <button

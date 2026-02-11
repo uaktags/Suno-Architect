@@ -41,6 +41,13 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                  {/* Left: Controls & Info */}
                  <div className="lg:col-span-1 space-y-6">
+                     {state.renderError && (
+                        <div className="bg-red-500/10 border border-red-500/40 rounded-xl p-3 text-xs text-red-200">
+                            <div className="font-bold mb-1">Last Render Error</div>
+                            <div className="font-mono break-words">{state.renderError}</div>
+                        </div>
+                     )}
+
                      <MetadataCard 
                         lyricSource={state.lyricSource}
                         setLyricSource={setters.setLyricSource}

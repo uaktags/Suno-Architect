@@ -7,14 +7,47 @@ interface CopyButtonProps {
 
 const CopyButton: React.FC<CopyButtonProps> = ({ text, label = 'Copy' }) => {
   const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const fallbackCopy = (value: string): boolean => {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return ok;
+    } catch {
+      return false;
+    }
+  };
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ok = fallbackCopy(text);
+        if (!ok) throw new Error('Clipboard API unavailable');
+      }
       setCopied(true);
+      setFailed(false);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
+      const ok = fallbackCopy(text);
+      if (ok) {
+        setCopied(true);
+        setFailed(false);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
       console.error('Failed to copy!', err);
+      setFailed(true);
+      setTimeout(() => setFailed(false), 2500);
     }
   };
 
@@ -28,6 +61,8 @@ const CopyButton: React.FC<CopyButtonProps> = ({ text, label = 'Copy' }) => {
         ${
           copied
             ? 'bg-green-500/20 border-green-500/50 text-green-400'
+            : failed
+            ? 'bg-red-500/20 border-red-500/50 text-red-300'
             : 'bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white'
         }
       `}
@@ -38,6 +73,13 @@ const CopyButton: React.FC<CopyButtonProps> = ({ text, label = 'Copy' }) => {
             <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
           </svg>
           <span>Copied!</span>
+        </>
+      ) : failed ? (
+        <>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M18 10A8 8 0 114 4.58V4a1 1 0 10-2 0v4a1 1 0 001 1h4a1 1 0 100-2H5.34A6 6 0 1110 16a1 1 0 100 2 8 8 0 008-8z" clipRule="evenodd" />
+          </svg>
+          <span>Copy failed</span>
         </>
       ) : (
         <>

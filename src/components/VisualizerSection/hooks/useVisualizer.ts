@@ -64,6 +64,7 @@ export const useVisualizer = (
     // Rendering State
     const [isRendering, setIsRendering] = useState(false);
     const [renderProgress, setRenderProgress] = useState(0);
+    const [renderError, setRenderError] = useState<string | null>(null);
     const [isPreparing, setIsPreparing] = useState(false);
     const [isGrouping, setIsGrouping] = useState(false);
     const [progress, setProgress] = useState(0); 
@@ -409,6 +410,7 @@ export const useVisualizer = (
         audioRef.current.pause();
         if(customVideoRef.current) customVideoRef.current.pause();
 
+        setRenderError(null);
         setIsRendering(true);
         setRenderProgress(0);
 
@@ -434,8 +436,10 @@ export const useVisualizer = (
             );
         } catch (e: any) {
             if(e.message !== "Render Cancelled") {
-                console.error(e);
-                alert("Render Failed. See console.");
+                const message = e?.message || "Unknown rendering error.";
+                console.error("Render failed:", e);
+                setRenderError(message);
+                alert(`Render Failed: ${message}`);
             }
         } finally {
             setIsRendering(false);
@@ -451,7 +455,7 @@ export const useVisualizer = (
             audioBitrate, imgSrc, activeColor, inactiveColor, inactiveOpacity, fontFamily,
             smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity,
             clipData, alignment, lines, lyricSource, applyStatus,
-            isRendering, renderProgress, isPreparing, isGrouping, progress, duration, isPlaying
+            isRendering, renderProgress, renderError, isPreparing, isGrouping, progress, duration, isPlaying
         },
         setters: {
             setSelectedClipId, setManualId, setAspectRatio, setVisualMode, setCustomBg, setCustomAudio,
