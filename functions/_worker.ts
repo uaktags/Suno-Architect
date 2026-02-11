@@ -884,6 +884,64 @@ async function handleAlbumRemoveSong(request: Request, env: Env, albumId: number
   return json(request, env, { success: true });
 }
 
+async function handleAlbumReorderSongs(request: Request, env: Env, albumId: number): Promise<Response> {
+  const authResult = await requireAuth(request, env);
+  if (authResult instanceof Response) return authResult;
+  const body = await parseJsonBody(request);
+  if (!body) return json(request, env, { error: "Invalid JSON body" }, 400);
+
+  const songIds = Array.isArray(body.songIds)
+    ? body.songIds.map((s: unknown) => String(s || "").trim()).filter(Boolean)
+    : [];
+  const uniqueSongIds = Array.from(new Set(songIds));
+
+  const db = getDb(env);
+  if (db) {
+    await ensureSchema(env);
+    const ownership = await db.prepare("SELECT id FROM albums WHERE id = ? AND user_id = ?").bind(albumId, authResult.id).first();
+    if (!ownership) return json(request, env, { error: "Album not found" }, 404);
+
+    const currentSongsRes = await db.prepare("SELECT song_id FROM album_songs WHERE album_id = ?")
+      .bind(albumId)
+      .all<{ song_id: string }>();
+    const currentSongIds = (currentSongsRes.results || []).map((r) => r.song_id);
+    const currentSet = new Set(currentSongIds);
+    if (uniqueSongIds.length !== currentSongIds.length || uniqueSongIds.some((id) => !currentSet.has(id))) {
+      return json(request, env, { error: "songIds must include every song in the album exactly once" }, 400);
+    }
+
+    for (let idx = 0; idx < uniqueSongIds.length; idx += 1) {
+      await db.prepare("UPDATE album_songs SET sort_order = ? WHERE album_id = ? AND song_id = ?")
+        .bind(idx, albumId, uniqueSongIds[idx])
+        .run();
+    }
+
+    await db.prepare("UPDATE albums SET updated_at = ? WHERE id = ?").bind(new Date().toISOString(), albumId).run();
+    return json(request, env, { success: true });
+  }
+
+  const album = memoryAlbums.get(albumId);
+  if (!album || album.user_id !== authResult.id) return json(request, env, { error: "Album not found" }, 404);
+
+  const currentSongs = Array.from(memoryAlbumSongs.values()).filter((s) => s.album_id === albumId);
+  const currentSet = new Set(currentSongs.map((s) => s.song_id));
+  if (uniqueSongIds.length !== currentSongs.length || uniqueSongIds.some((id) => !currentSet.has(id))) {
+    return json(request, env, { error: "songIds must include every song in the album exactly once" }, 400);
+  }
+
+  uniqueSongIds.forEach((songId, index) => {
+    const key = `${albumId}:${songId}`;
+    const song = memoryAlbumSongs.get(key);
+    if (!song) return;
+    song.sort_order = index;
+    memoryAlbumSongs.set(key, song);
+  });
+
+  album.updated_at = new Date().toISOString();
+  memoryAlbums.set(albumId, album);
+  return json(request, env, { success: true });
+}
+
 async function handleSongMetaGet(request: Request, env: Env, songId: string): Promise<Response> {
   const authResult = await requireAuth(request, env);
   if (authResult instanceof Response) return authResult;
@@ -979,6 +1037,16 @@ export default {
     }
     if (url.pathname === "/api/library/albums" && request.method === "POST") {
       return handleAlbumCreate(request, env);
+    }
+
+    const albumSongsReorderMatch = url.pathname.match(/^\/api\/library\/albums\/(\d+)\/songs\/reorder$/);
+    if (albumSongsReorderMatch) {
+      const albumId = Number(albumSongsReorderMatch[1]);
+      if (!Number.isFinite(albumId)) return json(request, env, { error: "Invalid album id" }, 400);
+      if (request.method === "PATCH") {
+        return handleAlbumReorderSongs(request, env, albumId);
+      }
+      return json(request, env, { error: "Method not allowed" }, 405);
     }
 
     const albumSongMatch = url.pathname.match(/^\/api\/library\/albums\/(\d+)\/songs\/([^/]+)$/);

@@ -50,6 +50,13 @@ export async function removeSongFromAlbum(albumId: number, songId: string): Prom
   });
 }
 
+export async function reorderAlbumSongs(albumId: number, songIds: string[]): Promise<void> {
+  await request(`/api/library/albums/${albumId}/songs/reorder`, {
+    method: 'PATCH',
+    body: JSON.stringify({ songIds }),
+  });
+}
+
 export async function getSongMeta(songId: string): Promise<SongMetaResponse> {
   return request<SongMetaResponse>(`/api/library/songs/${encodeURIComponent(songId)}/meta`, { method: 'GET' });
 }

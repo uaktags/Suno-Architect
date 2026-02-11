@@ -12,6 +12,7 @@ import { ProviderSettingsModal } from './components/ProviderSettingsModal';
 import { getSunoCredits, updateSunoMetadata, getSunoFeed, getSunoClip, getSunoPlaylist } from './services/sunoApi';
 import HistorySection from './components/HistorySection/HistorySection';
 import VisualizerSection from './components/VisualizerSection/VisualizerSection';
+import AlbumsSection from './components/AlbumsSection/AlbumsSection';
 import { stripMetaTags } from './utils/lyrics';
 import { validateProviderConfig, getDefaultModelForProvider, getMaxTracksForProvider } from './services/providers/providerFactory';
 import {
@@ -604,6 +605,8 @@ const App: React.FC = () => {
                     providerConfig={providerConfig}
                   />
               );
+          case 'albums':
+              return <AlbumsSection history={history} />;
           case 'generator':
           default:
               return (
@@ -779,6 +782,16 @@ const App: React.FC = () => {
                         {history.length}
                     </span>
                 )}
+             </button>
+             <button
+                onClick={() => setView('albums')}
+                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+                    view === 'albums'
+                    ? 'bg-slate-700 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                }`}
+             >
+                Albums
              </button>
              <button
                 onClick={() => setView('visualizer')}

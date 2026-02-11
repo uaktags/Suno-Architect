@@ -98,7 +98,7 @@ export interface GenerationOptions {
   objectivePreset?: AlbumObjectivePreset;
 }
 
-export type ViewMode = 'generator' | 'history' | 'visualizer';
+export type ViewMode = 'generator' | 'history' | 'albums' | 'visualizer';
 
 export type Qt6Style = 'wave' | 'bars' | 'circle' | 'circular-wave';
 
