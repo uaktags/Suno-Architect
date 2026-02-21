@@ -8,6 +8,8 @@ interface ImportMetaEnv {
   readonly VITE_AI_PROVIDER_TYPE?: string;
   readonly VITE_AI_PROVIDER_MODEL?: string;
   readonly VITE_SUNO_PROXY_URL?: string;
+  readonly VITE_APP_VERSION?: string;
+  readonly VITE_APP_COMMIT?: string;
 }
 
 interface ImportMeta {

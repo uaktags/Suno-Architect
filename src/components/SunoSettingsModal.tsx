@@ -204,7 +204,7 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
       }
   };
 
-  const tokenSnippet = `await (async function() {
+  const tokenSnippet = `(async () => {
     const sessionToken = await window?.Clerk?.session?.getToken?.();
 
     if (!sessionToken) {
@@ -215,11 +215,41 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
     console.log("%c Suno Session Token Found! ", "background: #222; color: #bada55; font-size: 14px;");
     console.log(sessionToken);
 
+    const copyWithExecCommand = (text) => {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      let ok = false;
+      try {
+        ok = document.execCommand("copy");
+      } catch (err) {
+        ok = false;
+      }
+      document.body.removeChild(textarea);
+      return ok;
+    };
+
+    let copied = false;
     try {
-      await navigator.clipboard.writeText(sessionToken);
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(sessionToken);
+        copied = true;
+      }
+    } catch (err) {}
+
+    if (!copied) {
+      copied = copyWithExecCommand(sessionToken);
+    }
+
+    if (copied) {
       console.log("%c Result copied to clipboard automatically.", "color: gray;");
-    } catch (err) {
-      console.warn("Clipboard write failed. Copy from console output above.", err);
+    } else {
+      console.warn("Auto-copy failed. Token is printed above for manual copy.");
     }
 })();`;
 

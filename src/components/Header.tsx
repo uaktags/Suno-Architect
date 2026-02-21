@@ -28,6 +28,16 @@ export const Header: React.FC<HeaderProps> = ({
   onGeminiModelChange,
   providerConfig
 }) => {
+  const buildLabel = `v${import.meta.env.VITE_APP_VERSION || 'dev'} (${import.meta.env.VITE_APP_COMMIT || 'local'})`;
+  const providerLabel =
+    providerConfig?.type === 'gemini'
+      ? 'Powered by Gemini'
+      : providerConfig?.type === 'openrouter'
+        ? 'Powered by OpenRouter'
+        : providerConfig?.type === 'openapi'
+          ? 'Powered by Custom API'
+          : 'No provider selected';
+
   const [hasKey, setHasKey] = useState(false);
   const [isAiStudio, setIsAiStudio] = useState(false);
   const [showKeyInput, setShowKeyInput] = useState(false);
@@ -40,6 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
   // Custom Dropdown State for Suno
   const [isSunoDropdownOpen, setIsSunoDropdownOpen] = useState(false);
   const sunoDropdownRef = useRef<HTMLDivElement>(null);
+  const hasProviderSettings = !!onOpenProviderSettings;
 
   // Click outside listener for dropdowns
   useEffect(() => {
@@ -182,18 +193,16 @@ export const Header: React.FC<HeaderProps> = ({
           <h1 className="text-xl font-bold tracking-tight text-white">
             Suno <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Architect</span>
           </h1>
-          <p className="text-xs text-slate-400 font-medium">
-            {providerConfig?.type === 'gemini' ? 'Powered by Gemini' :
-             providerConfig?.type === 'openrouter' ? 'Powered by OpenRouter' :
-             providerConfig?.type === 'openapi' ? 'Powered by Custom API' :
-             'Version 1.1.0'}
+          <p className="text-xs text-slate-400 font-medium" title={`Build ${buildLabel}`}>
+            {providerLabel}
             {providerConfig?.model && ` • ${providerConfig.model}`}
+            {` • ${buildLabel}`}
           </p>
         </div>
       </div>
       
       <div className="flex items-center gap-3 relative">
-        {showKeyInput && !isAiStudio && (
+        {!hasProviderSettings && showKeyInput && !isAiStudio && (
             <div className="absolute top-14 right-0 bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-2xl w-80 z-50 animate-in fade-in slide-in-from-top-2">
                 <label className="block text-xs font-semibold text-slate-400 mb-2">Enter your Gemini API Key</label>
                 <div className="flex gap-2 mb-4">
@@ -396,7 +405,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
               onClick={onOpenProviderSettings}
               className="flex items-center gap-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700 rounded-lg px-3 py-2 transition-all text-xs font-bold"
-              title="AI Provider Configuration"
+              title="AI Provider and Key Configuration"
           >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                   <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1-1-1.74l-.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
@@ -406,31 +415,33 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        <button 
-            onClick={handleAction}
-            className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg transition-all shadow-lg 
-            ${!hasKey 
-                ? 'bg-slate-100 text-slate-900 hover:bg-white shadow-purple-500/10' 
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
-        >
-            {!hasKey ? (
-                <>
-                    {/* Zap Icon */}
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-purple-600">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                    </svg>
-                    <span>{isAiStudio ? 'Login with Google' : 'Set API Key'}</span>
-                </>
-            ) : (
-                <>
-                    {/* Key Icon */}
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                    </svg>
-                    <span>{isAiStudio ? 'API Key' : providerConfig ? 'Provider Key' : 'Gemini Key'}</span>
-                </>
-            )}
-        </button>
+        {!hasProviderSettings && (
+          <button 
+              onClick={handleAction}
+              className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg transition-all shadow-lg 
+              ${!hasKey 
+                  ? 'bg-slate-100 text-slate-900 hover:bg-white shadow-purple-500/10' 
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
+          >
+              {!hasKey ? (
+                  <>
+                      {/* Zap Icon */}
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-purple-600">
+                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                      </svg>
+                      <span>{isAiStudio ? 'Login with Google' : 'Set API Key'}</span>
+                  </>
+              ) : (
+                  <>
+                      {/* Key Icon */}
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                      </svg>
+                      <span>{isAiStudio ? 'API Key' : providerConfig ? 'Provider Key' : 'Gemini Key'}</span>
+                  </>
+              )}
+          </button>
+        )}
       </div>
     </header>
   );

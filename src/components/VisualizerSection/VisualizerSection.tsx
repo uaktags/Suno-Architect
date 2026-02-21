@@ -94,8 +94,11 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                      <ActionButtons 
                         audioBitrate={state.audioBitrate}
                         setAudioBitrate={setters.setAudioBitrate}
+                        fps={state.fps}
+                        setFps={setters.setFps}
                         isRendering={state.isRendering}
                         renderProgress={state.renderProgress}
+                        renderSpeed={state.renderSpeed}
                         onStartRender={handlers.startOfflineRender}
                         isPreparing={state.isPreparing}
                         hasAlignment={!!state.alignment}
@@ -121,6 +124,9 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                         qt6Style={state.qt6Style} setQt6Style={setters.setQt6Style}
                         qt6BarCount={state.qt6BarCount} setQt6BarCount={setters.setQt6BarCount}
                         qt6Sensitivity={state.qt6Sensitivity} setQt6Sensitivity={setters.setQt6Sensitivity}
+                        videoBitrate={state.videoBitrate} setVideoBitrate={setters.setVideoBitrate}
+                        videoBitrateMode={state.videoBitrateMode} setVideoBitrateMode={setters.setVideoBitrateMode}
+                        fps={state.fps} setFps={setters.setFps}
                         onReset={() => {
                             setters.setActiveColor('#e879f9');
                             setters.setInactiveColor('#ffffff');
@@ -131,6 +137,9 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                             setters.setQt6Style('wave');
                             setters.setQt6BarCount(64);
                             setters.setQt6Sensitivity(1.0);
+                            setters.setVideoBitrate(5000000);
+                            setters.setVideoBitrateMode('variable');
+                            setters.setFps(30);
                         }}
                      />
 
