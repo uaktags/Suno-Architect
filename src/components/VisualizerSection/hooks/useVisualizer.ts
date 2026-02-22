@@ -38,6 +38,15 @@ type VisualizerConfig = {
     videoBitrateMode: 'constant' | 'variable';
     audioBitrate: number;
     fps: number;
+    outputAspectTarget: 'landscape' | 'portrait';
+    preRollEnabled: boolean;
+    preRollType: 'text' | 'qr';
+    preRollText: string;
+    preRollSeconds: number;
+    postRollEnabled: boolean;
+    postRollType: 'text' | 'qr';
+    postRollText: string;
+    postRollSeconds: number;
 };
 type SavedVisualizerPreset = {
     id: string;
@@ -81,6 +90,15 @@ export const useVisualizer = (
     const [videoBitrate, setVideoBitrate] = useState(5000000);
     const [videoBitrateMode, setVideoBitrateMode] = useState<'constant' | 'variable'>('variable');
     const [fps, setFps] = useState(30);
+    const [outputAspectTarget, setOutputAspectTarget] = useState<'landscape' | 'portrait'>('landscape');
+    const [preRollEnabled, setPreRollEnabled] = useState(false);
+    const [preRollType, setPreRollType] = useState<'text' | 'qr'>('text');
+    const [preRollText, setPreRollText] = useState('Thank you for supporting my work');
+    const [preRollSeconds, setPreRollSeconds] = useState(4);
+    const [postRollEnabled, setPostRollEnabled] = useState(false);
+    const [postRollType, setPostRollType] = useState<'text' | 'qr'>('text');
+    const [postRollText, setPostRollText] = useState('Tripped Out Tim');
+    const [postRollSeconds, setPostRollSeconds] = useState(4);
     const [imgSrc, setImgSrc] = useState<string>('');
 
     // Update video bitrate based on resolution
@@ -195,6 +213,15 @@ export const useVisualizer = (
                     if (session.config.videoBitrateMode) setVideoBitrateMode(session.config.videoBitrateMode);
                     if (typeof session.config.audioBitrate === 'number') setAudioBitrate(session.config.audioBitrate);
                     if (typeof session.config.fps === 'number') setFps(session.config.fps);
+                    if (session.config.outputAspectTarget) setOutputAspectTarget(session.config.outputAspectTarget);
+                    if (typeof session.config.preRollEnabled === 'boolean') setPreRollEnabled(session.config.preRollEnabled);
+                    if (session.config.preRollType) setPreRollType(session.config.preRollType);
+                    if (typeof session.config.preRollText === 'string') setPreRollText(session.config.preRollText);
+                    if (typeof session.config.preRollSeconds === 'number') setPreRollSeconds(session.config.preRollSeconds);
+                    if (typeof session.config.postRollEnabled === 'boolean') setPostRollEnabled(session.config.postRollEnabled);
+                    if (session.config.postRollType) setPostRollType(session.config.postRollType);
+                    if (typeof session.config.postRollText === 'string') setPostRollText(session.config.postRollText);
+                    if (typeof session.config.postRollSeconds === 'number') setPostRollSeconds(session.config.postRollSeconds);
                 }
             }
         } catch (err) {
@@ -429,12 +456,22 @@ export const useVisualizer = (
         videoBitrate,
         videoBitrateMode,
         audioBitrate,
-        fps
+        fps,
+        outputAspectTarget,
+        preRollEnabled,
+        preRollType,
+        preRollText,
+        preRollSeconds,
+        postRollEnabled,
+        postRollType,
+        postRollText,
+        postRollSeconds
     }), [
         aspectRatio, showBackgroundLayer, mainVisualizerEnabled, templatePreset, activeColor, inactiveColor, inactiveOpacity, fontFamily,
         smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity,
         logoPosition, logoScale, logoOpacity, logoPulseEnabled, logoPulseStyle, logoPulseGap, logoPulseScale, logoPulseSensitivity, showTitle,
-        videoBitrate, videoBitrateMode, audioBitrate, fps
+        videoBitrate, videoBitrateMode, audioBitrate, fps,
+        outputAspectTarget, preRollEnabled, preRollType, preRollText, preRollSeconds, postRollEnabled, postRollType, postRollText, postRollSeconds
     ]);
 
     const applyConfig = useCallback((config: any) => {
@@ -468,6 +505,15 @@ export const useVisualizer = (
         if (config.videoBitrateMode) setVideoBitrateMode(config.videoBitrateMode);
         if (typeof config.audioBitrate === 'number') setAudioBitrate(config.audioBitrate);
         if (typeof config.fps === 'number') setFps(config.fps);
+        if (config.outputAspectTarget) setOutputAspectTarget(config.outputAspectTarget);
+        if (typeof config.preRollEnabled === 'boolean') setPreRollEnabled(config.preRollEnabled);
+        if (config.preRollType) setPreRollType(config.preRollType);
+        if (typeof config.preRollText === 'string') setPreRollText(config.preRollText);
+        if (typeof config.preRollSeconds === 'number') setPreRollSeconds(config.preRollSeconds);
+        if (typeof config.postRollEnabled === 'boolean') setPostRollEnabled(config.postRollEnabled);
+        if (config.postRollType) setPostRollType(config.postRollType);
+        if (typeof config.postRollText === 'string') setPostRollText(config.postRollText);
+        if (typeof config.postRollSeconds === 'number') setPostRollSeconds(config.postRollSeconds);
     }, []);
 
     const saveCurrentPreset = useCallback((name: string) => {
@@ -668,9 +714,9 @@ export const useVisualizer = (
         if (!analyserRef.current || !dataArrayRef.current) return null;
 
         if (qt6Style === 'wave') {
-            analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+            analyserRef.current.getByteTimeDomainData(dataArrayRef.current as any);
         } else {
-            analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+            analyserRef.current.getByteFrequencyData(dataArrayRef.current as any);
         }
         return dataArrayRef.current;
     };
@@ -857,7 +903,20 @@ export const useVisualizer = (
                     visualMode: currentVisualMode,
                     qt6Style,
                     customVideo: customVideoRef.current,
-                    customBgType: customBg?.type
+                    customBgType: customBg?.type,
+                    outputAspectTarget,
+                    preRoll: {
+                        enabled: preRollEnabled,
+                        type: preRollType,
+                        text: preRollText,
+                        seconds: preRollSeconds
+                    },
+                    postRoll: {
+                        enabled: postRollEnabled,
+                        type: postRollType,
+                        text: postRollText,
+                        seconds: postRollSeconds
+                    }
                 },
                 setRenderProgress,
                 (ctx, time, data) => {
@@ -893,7 +952,7 @@ export const useVisualizer = (
         state: {
             selectedClipId, manualId, aspectRatio, showBackgroundLayer, mainVisualizerEnabled, visualMode: currentVisualMode, customBg, customAudio,
             templatePreset, logoAsset, logoPosition, logoScale, logoOpacity, logoPulseEnabled, logoPulseStyle, logoPulseGap, logoPulseScale, logoPulseSensitivity, showTitle,
-            audioBitrate, videoBitrate, videoBitrateMode, fps, imgSrc, activeColor, inactiveColor, inactiveOpacity, fontFamily,
+            audioBitrate, videoBitrate, videoBitrateMode, fps, outputAspectTarget, preRollEnabled, preRollType, preRollText, preRollSeconds, postRollEnabled, postRollType, postRollText, postRollSeconds, imgSrc, activeColor, inactiveColor, inactiveOpacity, fontFamily,
             smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity,
             clipData, alignment, lines, lyricSource, applyStatus, savedPresets,
             isRendering, renderProgress, renderError, renderSpeed, isPreparing, isGrouping, progress, duration, isPlaying
@@ -901,7 +960,7 @@ export const useVisualizer = (
         setters: {
             setSelectedClipId, setManualId, setAspectRatio, setShowBackgroundLayer, setMainVisualizerEnabled, setCustomBg, setCustomAudio,
             setTemplatePreset, setLogoAsset, setLogoPosition, setLogoScale, setLogoOpacity, setLogoPulseEnabled, setLogoPulseStyle, setLogoPulseGap, setLogoPulseScale, setLogoPulseSensitivity, setShowTitle,
-            setAudioBitrate, setVideoBitrate, setVideoBitrateMode, setFps, setImgSrc, setActiveColor, setInactiveColor, setInactiveOpacity, setFontFamily,
+            setAudioBitrate, setVideoBitrate, setVideoBitrateMode, setFps, setOutputAspectTarget, setPreRollEnabled, setPreRollType, setPreRollText, setPreRollSeconds, setPostRollEnabled, setPostRollType, setPostRollText, setPostRollSeconds, setImgSrc, setActiveColor, setInactiveColor, setInactiveOpacity, setFontFamily,
             setSmoothingFactor, setVerticalOffset, setQt6Style, setQt6BarCount, setQt6Sensitivity,
             setLyricSource, setIsPlaying
         },

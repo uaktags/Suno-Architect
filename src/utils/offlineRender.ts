@@ -1,4 +1,5 @@
 import { Qt6Style } from '../types';
+import QRCode from 'qrcode';
 
 const MAX_FRAMES_IN_FLIGHT = 10;
 let framesInFlight = 0;
@@ -19,6 +20,19 @@ export const performOfflineRender = async (
         qt6Style: Qt6Style;
         customVideo?: HTMLVideoElement | null;
         customBgType?: 'image' | 'video';
+        outputAspectTarget?: 'landscape' | 'portrait';
+        preRoll?: {
+            enabled: boolean;
+            type: 'text' | 'qr';
+            text: string;
+            seconds: number;
+        };
+        postRoll?: {
+            enabled: boolean;
+            type: 'text' | 'qr';
+            text: string;
+            seconds: number;
+        };
     },
     onProgress: (progress: number) => void,
     onRenderFrame: (ctx: CanvasRenderingContext2D, time: number, data: Uint8Array | Float32Array) => void
@@ -99,6 +113,92 @@ export const performOfflineRender = async (
 
             const { customVideo, ...workerConfig } = config;
 
+            const createStaticCardBlob = async (
+                card: { enabled: boolean; type: 'text' | 'qr'; text: string; seconds: number } | undefined,
+                width: number,
+                height: number,
+                fallbackTitle: string
+            ): Promise<ArrayBuffer | null> => {
+                if (!card?.enabled || !card.text.trim() || card.seconds <= 0) return null;
+
+                const cardCanvas = document.createElement('canvas');
+                cardCanvas.width = width;
+                cardCanvas.height = height;
+                const c = cardCanvas.getContext('2d');
+                if (!c) return null;
+
+                const gradient = c.createLinearGradient(0, 0, width, height);
+                gradient.addColorStop(0, '#0a0a0a');
+                gradient.addColorStop(1, '#1f2937');
+                c.fillStyle = gradient;
+                c.fillRect(0, 0, width, height);
+
+                c.strokeStyle = '#475569';
+                c.lineWidth = Math.max(2, Math.round(Math.min(width, height) * 0.004));
+                c.strokeRect(16, 16, width - 32, height - 32);
+
+                c.fillStyle = '#94a3b8';
+                c.font = `600 ${Math.max(18, Math.round(width * 0.02))}px 'Courier Prime', monospace`;
+                c.textAlign = 'center';
+                c.textBaseline = 'top';
+                c.fillText(fallbackTitle.toUpperCase(), width / 2, Math.round(height * 0.08));
+
+                if (card.type === 'qr') {
+                    const qrSize = Math.round(Math.min(width, height) * 0.42);
+                    const qrCanvas = document.createElement('canvas');
+                    await QRCode.toCanvas(qrCanvas, card.text.trim(), {
+                        width: qrSize,
+                        margin: 1,
+                        color: {
+                            dark: '#f8fafc',
+                            light: '#0b1120'
+                        }
+                    });
+                    const x = Math.round((width - qrSize) / 2);
+                    const y = Math.round((height - qrSize) / 2) - Math.round(height * 0.05);
+                    c.drawImage(qrCanvas, x, y);
+                }
+
+                c.fillStyle = '#e2e8f0';
+                c.font = `700 ${Math.max(24, Math.round(width * 0.04))}px Inter, sans-serif`;
+                c.textBaseline = 'middle';
+
+                const lines = card.text
+                    .trim()
+                    .split('\n')
+                    .flatMap((line) => {
+                        if (line.length <= 42) return [line];
+                        const chunks: string[] = [];
+                        let current = '';
+                        line.split(' ').forEach((word) => {
+                            const candidate = current ? `${current} ${word}` : word;
+                            if (candidate.length > 42) {
+                                if (current) chunks.push(current);
+                                current = word;
+                            } else {
+                                current = candidate;
+                            }
+                        });
+                        if (current) chunks.push(current);
+                        return chunks;
+                    })
+                    .slice(0, 5);
+
+                const textTop = card.type === 'qr' ? Math.round(height * 0.78) : Math.round(height * 0.45);
+                lines.forEach((line, idx) => {
+                    c.fillText(line, width / 2, textTop + idx * Math.round(height * 0.06));
+                });
+
+                const blob = await new Promise<Blob | null>((resolveBlob) => cardCanvas.toBlob(resolveBlob, 'image/png'));
+                if (!blob) return null;
+                return blob.arrayBuffer();
+            };
+
+            const [preRollImage, postRollImage] = await Promise.all([
+                createStaticCardBlob(config.preRoll, config.width, config.height, 'Pre-Roll Message'),
+                createStaticCardBlob(config.postRoll, config.width, config.height, 'Post-Roll Message')
+            ]);
+
             worker.postMessage({
                 type: 'INIT',
                 config: workerConfig, 
@@ -109,7 +209,9 @@ export const performOfflineRender = async (
                     sampleRate: decodedBuffer.sampleRate,
                     length: decodedBuffer.length,
                     numberOfChannels: decodedBuffer.numberOfChannels
-                }
+                },
+                preRollImage,
+                postRollImage
             });
 
             await workerReadyPromise;

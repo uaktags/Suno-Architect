@@ -19,6 +19,7 @@ interface VisualizerSectionProps {
   onUpdateClip: (id: string, updates: Partial<SunoClip>) => void;
   apiKey?: string;
   geminiModel?: string;
+  providerConfig?: unknown;
 }
 
 const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCookie, onUpdateClip, apiKey, geminiModel }) => {
@@ -145,6 +146,15 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                         videoBitrate={state.videoBitrate} setVideoBitrate={setters.setVideoBitrate}
                         videoBitrateMode={state.videoBitrateMode} setVideoBitrateMode={setters.setVideoBitrateMode}
                         fps={state.fps} setFps={setters.setFps}
+                        outputAspectTarget={state.outputAspectTarget} setOutputAspectTarget={setters.setOutputAspectTarget}
+                        preRollEnabled={state.preRollEnabled} setPreRollEnabled={setters.setPreRollEnabled}
+                        preRollType={state.preRollType} setPreRollType={setters.setPreRollType}
+                        preRollText={state.preRollText} setPreRollText={setters.setPreRollText}
+                        preRollSeconds={state.preRollSeconds} setPreRollSeconds={setters.setPreRollSeconds}
+                        postRollEnabled={state.postRollEnabled} setPostRollEnabled={setters.setPostRollEnabled}
+                        postRollType={state.postRollType} setPostRollType={setters.setPostRollType}
+                        postRollText={state.postRollText} setPostRollText={setters.setPostRollText}
+                        postRollSeconds={state.postRollSeconds} setPostRollSeconds={setters.setPostRollSeconds}
                         onReset={() => {
                             handlers.applyTemplatePreset('classic');
                             setters.setActiveColor('#e879f9');
@@ -161,6 +171,15 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                             setters.setVideoBitrate(5000000);
                             setters.setVideoBitrateMode('variable');
                             setters.setFps(30);
+                            setters.setOutputAspectTarget('landscape');
+                            setters.setPreRollEnabled(false);
+                            setters.setPreRollType('text');
+                            setters.setPreRollText('Thank you for supporting my work');
+                            setters.setPreRollSeconds(4);
+                            setters.setPostRollEnabled(false);
+                            setters.setPostRollType('text');
+                            setters.setPostRollText('Tripped Out Tim');
+                            setters.setPostRollSeconds(4);
                             setters.setShowTitle(true);
                             setters.setLogoPosition('bottom-right');
                             setters.setLogoScale(0.14);

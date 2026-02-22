@@ -52,6 +52,24 @@ interface VisualizerSettingsProps {
     setVideoBitrateMode: (val: 'constant' | 'variable') => void;
     fps: number;
     setFps: (val: number) => void;
+    outputAspectTarget: 'landscape' | 'portrait';
+    setOutputAspectTarget: (val: 'landscape' | 'portrait') => void;
+    preRollEnabled: boolean;
+    setPreRollEnabled: (val: boolean) => void;
+    preRollType: 'text' | 'qr';
+    setPreRollType: (val: 'text' | 'qr') => void;
+    preRollText: string;
+    setPreRollText: (val: string) => void;
+    preRollSeconds: number;
+    setPreRollSeconds: (val: number) => void;
+    postRollEnabled: boolean;
+    setPostRollEnabled: (val: boolean) => void;
+    postRollType: 'text' | 'qr';
+    setPostRollType: (val: 'text' | 'qr') => void;
+    postRollText: string;
+    setPostRollText: (val: string) => void;
+    postRollSeconds: number;
+    setPostRollSeconds: (val: number) => void;
     onReset: () => void;
 }
 
@@ -65,6 +83,9 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
     qt6Style, setQt6Style, qt6BarCount, setQt6BarCount, qt6Sensitivity, setQt6Sensitivity, 
     videoBitrate, setVideoBitrate, videoBitrateMode, setVideoBitrateMode,
     fps, setFps,
+    outputAspectTarget, setOutputAspectTarget,
+    preRollEnabled, setPreRollEnabled, preRollType, setPreRollType, preRollText, setPreRollText, preRollSeconds, setPreRollSeconds,
+    postRollEnabled, setPostRollEnabled, postRollType, setPostRollType, postRollText, setPostRollText, postRollSeconds, setPostRollSeconds,
     onReset
 }) => {
   const [newPresetName, setNewPresetName] = useState('');
@@ -244,6 +265,17 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
                     <option value="60">60 FPS</option>
                 </select>
             </div>
+            <div className="col-span-2 md:col-span-1">
+                <label className="text-[10px] text-slate-500 block mb-1">Render Target</label>
+                <select
+                    value={outputAspectTarget}
+                    onChange={(e) => setOutputAspectTarget(e.target.value as 'landscape' | 'portrait')}
+                    className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                >
+                    <option value="landscape">16:9 Output (1920x1080)</option>
+                    <option value="portrait">9:16 Output (1080x1920)</option>
+                </select>
+            </div>
             <div>
                 <label className="text-[10px] text-slate-500 block mb-1">Show Song Title</label>
                 <button
@@ -348,6 +380,85 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
                     className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                     disabled={!logoPulseEnabled}
                 />
+            </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-800">
+            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Custom Message Cards</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border border-slate-700 bg-slate-950/50 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-slate-200 uppercase tracking-wide">Pre-Roll</label>
+                        <button
+                            onClick={() => setPreRollEnabled(!preRollEnabled)}
+                            className={`px-2 py-1 rounded text-[10px] font-bold border ${preRollEnabled ? 'bg-cyan-500/20 border-cyan-500 text-cyan-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`}
+                        >
+                            {preRollEnabled ? 'Enabled' : 'Disabled'}
+                        </button>
+                    </div>
+                    <select
+                        value={preRollType}
+                        onChange={(e) => setPreRollType(e.target.value as 'text' | 'qr')}
+                        className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                        disabled={!preRollEnabled}
+                    >
+                        <option value="text">Text Message</option>
+                        <option value="qr">QR Code</option>
+                    </select>
+                    <textarea
+                        value={preRollText}
+                        onChange={(e) => setPreRollText(e.target.value)}
+                        placeholder={preRollType === 'qr' ? 'https://your-link.example' : 'Thank you for supporting my work'}
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-100 min-h-20"
+                        disabled={!preRollEnabled}
+                    />
+                    <input
+                        type="number"
+                        min={1}
+                        max={15}
+                        value={preRollSeconds}
+                        onChange={(e) => setPreRollSeconds(Number(e.target.value))}
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200"
+                        disabled={!preRollEnabled}
+                    />
+                </div>
+
+                <div className="border border-slate-700 bg-slate-950/50 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-slate-200 uppercase tracking-wide">Post-Roll</label>
+                        <button
+                            onClick={() => setPostRollEnabled(!postRollEnabled)}
+                            className={`px-2 py-1 rounded text-[10px] font-bold border ${postRollEnabled ? 'bg-purple-500/20 border-purple-500 text-purple-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`}
+                        >
+                            {postRollEnabled ? 'Enabled' : 'Disabled'}
+                        </button>
+                    </div>
+                    <select
+                        value={postRollType}
+                        onChange={(e) => setPostRollType(e.target.value as 'text' | 'qr')}
+                        className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                        disabled={!postRollEnabled}
+                    >
+                        <option value="text">Text Message</option>
+                        <option value="qr">QR Code</option>
+                    </select>
+                    <textarea
+                        value={postRollText}
+                        onChange={(e) => setPostRollText(e.target.value)}
+                        placeholder={postRollType === 'qr' ? 'https://your-link.example' : 'Tripped Out Tim'}
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-100 min-h-20"
+                        disabled={!postRollEnabled}
+                    />
+                    <input
+                        type="number"
+                        min={1}
+                        max={15}
+                        value={postRollSeconds}
+                        onChange={(e) => setPostRollSeconds(Number(e.target.value))}
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200"
+                        disabled={!postRollEnabled}
+                    />
+                </div>
             </div>
         </div>
 
