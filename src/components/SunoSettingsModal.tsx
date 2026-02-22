@@ -184,7 +184,54 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
       onClose();
   };
 
-  const tokenSnippet = `const t = await window.clerk.session.getToken({template:"suno-api"}); console.log("Bearer " + t);`;
+  const tokenSnippet = `(async () => {
+  const sessionToken = await window?.Clerk?.session?.getToken?.();
+
+  if (!sessionToken) {
+    console.error("Session token not found. Make sure you are logged in at suno.com");
+    return;
+  }
+
+  console.log("%c Suno Session Token Found! ", "background: #222; color: #bada55; font-size: 14px;");
+  console.log(sessionToken);
+
+  const copyWithExecCommand = (text) => {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    let ok = false;
+    try {
+      ok = document.execCommand("copy");
+    } catch (err) {
+      ok = false;
+    }
+    document.body.removeChild(textarea);
+    return ok;
+  };
+
+  let copied = false;
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(sessionToken);
+      copied = true;
+    }
+  } catch (err) {}
+
+  if (!copied) {
+    copied = copyWithExecCommand(sessionToken);
+  }
+
+  if (copied) {
+    console.log("%c Result copied to clipboard automatically.", "color: gray;");
+  } else {
+    console.warn("Auto-copy failed. Token is printed above for manual copy.");
+  }
+})();`;
 
   if (!isOpen) return null;
 

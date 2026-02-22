@@ -426,7 +426,7 @@ const App: React.FC<AppProps> = ({ onSignOut }) => {
          return;
     }
     
-    const fetchLimit = typeof limit === 'number' ? limit : 50;
+    const fetchLimit: number | 'all' = limit;
 
     setIsSyncingHistory(true);
     setSyncProgress('Fetching...');
@@ -479,7 +479,7 @@ const App: React.FC<AppProps> = ({ onSignOut }) => {
       });
       setUseCachedData(true);
       setOfflineProgress(`Cached: +${result.added} new, ${result.updated} updated, ${result.unchanged} unchanged`);
-      await handleFetchHistory(200);
+      await handleFetchHistory('all');
     } catch (error: any) {
       console.error('Local library cache sync failed', error);
       setOfflineProgress('Local library sync failed.');

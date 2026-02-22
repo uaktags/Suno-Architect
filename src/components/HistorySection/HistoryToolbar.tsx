@@ -129,6 +129,17 @@ const HistoryToolbar: React.FC<HistoryToolbarProps> = ({
                         </>
                     )}
                 </button>
+                <button
+                    onClick={() => onFetchHistory('all')}
+                    disabled={isSyncing}
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap border
+                    ${isSyncing
+                    ? 'bg-slate-700/50 text-slate-400 border-slate-600 cursor-wait'
+                    : 'bg-black text-cyan-200 border-cyan-500 hover:bg-slate-950'}`}
+                    title="Fetch all available Suno library items using pagination"
+                >
+                    Fetch All
+                </button>
 
                 <button
                     onClick={onDownloadOfflineCache}
