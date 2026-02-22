@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { LibraryAlbum, SunoClip } from '../../types';
 import { listAlbums, reorderAlbumSongs } from '../../services/libraryService';
+import { AppButton, AppCard } from '../ui/AppPrimitives';
 
 interface AlbumsSectionProps {
   history: SunoClip[];
@@ -92,14 +93,14 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-[var(--app-panel-border)]/70 bg-slate-900/30 p-6 text-sm text-slate-300">
+      <AppCard className="rounded-2xl border-[var(--app-panel-border)]/70 bg-slate-900/30 p-6 text-sm text-slate-300">
         Loading library albums...
-      </div>
+      </AppCard>
     );
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-7xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h2 className="text-2xl font-bold text-white">Albums Library</h2>
         <p className="text-sm text-slate-400 mt-1">
@@ -120,7 +121,7 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-4 rounded-2xl border border-[var(--app-panel-border)]/70 bg-[var(--app-panel)] p-3">
+          <AppCard className="lg:col-span-4 rounded-2xl border-[var(--app-panel-border)]/70 p-3">
             <div className="flex items-center justify-between px-2 py-1 mb-1">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Albums</span>
               <span className="text-xs text-slate-500">{albums.length}</span>
@@ -141,9 +142,9 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
                 </button>
               ))}
             </div>
-          </div>
+          </AppCard>
 
-          <div className="lg:col-span-8 rounded-2xl border border-[var(--app-panel-border)]/70 bg-[var(--app-panel)] p-4">
+          <AppCard className="lg:col-span-8 rounded-2xl border-[var(--app-panel-border)]/70 p-4">
             {!selectedAlbum ? (
               <div className="text-sm text-slate-400">Select an album.</div>
             ) : (
@@ -155,13 +156,13 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
                       <p className="text-sm text-slate-400 mt-1">{selectedAlbum.description}</p>
                     )}
                   </div>
-                  <button
+                  <AppButton
                     onClick={loadAlbums}
                     disabled={saving}
-                    className="text-xs rounded-md border border-slate-600 px-2 py-1 text-slate-300 hover:bg-[var(--app-panel)] disabled:opacity-50"
+                    className="text-xs rounded-md border-slate-600 px-2 py-1 text-slate-300 hover:bg-[var(--app-panel)] disabled:opacity-50"
                   >
                     Refresh
-                  </button>
+                  </AppButton>
                 </div>
 
                 {selectedAlbum.songs.length === 0 ? (
@@ -181,20 +182,20 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
                           <div className="text-[11px] text-slate-500 truncate">{song.songId}</div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
+                          <AppButton
                             onClick={() => moveTrack(index, index - 1)}
                             disabled={saving || index === 0}
-                            className="rounded-md border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-[var(--app-tab-hover)] disabled:opacity-40"
+                            className="rounded-md border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-[var(--app-tab-hover)] disabled:opacity-40"
                           >
                             Up
-                          </button>
-                          <button
+                          </AppButton>
+                          <AppButton
                             onClick={() => moveTrack(index, index + 1)}
                             disabled={saving || index === selectedAlbum.songs.length - 1}
-                            className="rounded-md border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-[var(--app-tab-hover)] disabled:opacity-40"
+                            className="rounded-md border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-[var(--app-tab-hover)] disabled:opacity-40"
                           >
                             Down
-                          </button>
+                          </AppButton>
                         </div>
                       </div>
                     ))}
@@ -202,7 +203,7 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
                 )}
               </>
             )}
-          </div>
+          </AppCard>
         </div>
       )}
     </div>

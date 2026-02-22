@@ -4,6 +4,7 @@ import VisualizerHeader from './VisualizerHeader';
 import VisualizerSettings from './VisualizerSettings';
 import { formatTime } from '../../utils/visualizer';
 import { useVisualizer } from './hooks/useVisualizer';
+import { AppButton, AppCard, AppInput, AppSelect, AppTextarea, StatusMessage } from '../ui/AppPrimitives';
 
 // Subcomponents
 import MetadataCard from './subcomponents/MetadataCard';
@@ -117,7 +118,7 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
   };
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-5xl mx-auto space-y-8">
+    <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-8">
         
         <VisualizerHeader 
             history={history}
@@ -199,67 +200,54 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                         hasAlignment={!!state.alignment}
                      />
 
-                     <div className="border-2 border-[var(--app-panel-border)] bg-black p-3 space-y-3">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-300">Publishing Workflow</p>
+                      <AppCard className="space-y-3">
+                        <p className="text-sm font-semibold text-white">Publishing Workflow</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          <select
+                          <AppSelect
                             value={publishTarget}
                             onChange={(e) => setPublishTarget(e.target.value as 'youtube' | 'facebook' | 'both')}
-                            className="h-10 px-3 bg-slate-950 border border-[var(--app-panel-border)] text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                            className="h-10"
                           >
                             <option value="youtube">Publish: YouTube (16:9)</option>
                             <option value="facebook">Publish: Facebook (16:9 / 9:16)</option>
                             <option value="both">Publish: Both (FB then YT)</option>
-                          </select>
+                          </AppSelect>
 
                           {(publishTarget === 'facebook' || publishTarget === 'both') && (
-                            <select
+                            <AppSelect
                               value={fbAspect}
                               onChange={(e) => setFbAspect(e.target.value as 'landscape' | 'portrait')}
-                              className="h-10 px-3 bg-slate-950 border border-[var(--app-panel-border)] text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                              className="h-10"
                             >
                               <option value="landscape">Facebook Aspect: 16:9 Landscape</option>
                               <option value="portrait">Facebook Aspect: 9:16 Portrait</option>
-                            </select>
+                            </AppSelect>
                           )}
                         </div>
 
-                        <input
+                        <AppInput
                           value={publishTitle}
                           onChange={(e) => setPublishTitle(e.target.value)}
-                          placeholder="PUBLISH TITLE"
-                          className="w-full h-10 px-3 bg-slate-950 border border-[var(--app-panel-border)] text-xs uppercase tracking-wider placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                          placeholder="Publish title"
                         />
-                        <textarea
+                        <AppTextarea
                           value={publishDescription}
                           onChange={(e) => setPublishDescription(e.target.value)}
-                          placeholder="PUBLISH DESCRIPTION"
-                          className="w-full h-24 p-3 bg-slate-950 border border-[var(--app-panel-border)] text-xs tracking-wide placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                          placeholder="Publish description"
+                          className="h-24 resize-y"
                         />
 
-                        <button
-                          type="button"
+                        <AppButton
+                          variant="primary"
                           onClick={handlePublish}
                           disabled={!state.clipData || publishState === 'publishing'}
-                          className="h-10 px-4 border border-cyan-300 text-xs font-bold uppercase tracking-[0.16em] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-cyan-300/10"
+                          className="w-full"
                         >
                           {publishState === 'publishing' ? 'Publishing...' : 'Run Publish Workflow'}
-                        </button>
+                        </AppButton>
 
-                        {publishMessage && (
-                          <p
-                            className={`text-xs ${
-                              publishState === 'done'
-                                ? 'text-emerald-300'
-                                : publishState === 'error'
-                                  ? 'text-red-300'
-                                  : 'text-slate-300'
-                            }`}
-                          >
-                            {publishMessage}
-                          </p>
-                        )}
-                     </div>
+                        <StatusMessage state={publishState} message={publishMessage} />
+                      </AppCard>
                  </div>
 
                  {/* Right: Canvas Preview */}
