@@ -140,6 +140,25 @@ export const upsertAlbums = async (albums: OfflineAlbum[]) => {
   await tx.done;
 };
 
+export const listAlbumsByUpdatedAtDesc = async (): Promise<OfflineAlbum[]> => {
+  const db = await getOfflineDb();
+  const tx = db.transaction('albums', 'readonly');
+  const index = tx.store.index('byUpdatedAt');
+  const results: OfflineAlbum[] = [];
+  let cursor = await index.openCursor(null, 'prev');
+  while (cursor) {
+    results.push(cursor.value);
+    cursor = await cursor.continue();
+  }
+  await tx.done;
+  return results;
+};
+
+export const deleteAlbumById = async (id: string) => {
+  const db = await getOfflineDb();
+  await db.delete('albums', id);
+};
+
 export const listTracksByUpdatedAtDesc = async (limit = 50): Promise<OfflineTrack[]> => {
   const db = await getOfflineDb();
   const tx = db.transaction('tracks', 'readonly');
