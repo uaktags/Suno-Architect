@@ -1043,7 +1043,10 @@ const App: React.FC<AppProps> = ({ onSignOut }) => {
           {renderContent()}
         </main>
       )}
-      <Footer git="https://github.com/xiliourt/Suno-Architect/" />
+      <Footer
+        git="https://github.com/uaktags/Suno-Architect"
+        upstreamGit="https://github.com/xiliourt/Suno-Architect"
+      />
     </div>
   );
 };

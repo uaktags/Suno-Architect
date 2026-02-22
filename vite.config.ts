@@ -10,13 +10,21 @@ export default defineConfig(({ mode }) => {
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8787';
   const appVersion = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')).version || '0.0.0';
 
-  let appCommit = 'local';
-  try {
-    appCommit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
-      .toString()
-      .trim();
-  } catch {
-    appCommit = 'local';
+  const ciCommit =
+    process.env.VITE_APP_COMMIT ||
+    process.env.CF_PAGES_COMMIT_SHA ||
+    process.env.GITHUB_SHA ||
+    process.env.COMMIT_SHA;
+
+  let appCommit = ciCommit ? String(ciCommit).trim().slice(0, 7) : 'local';
+  if (!appCommit || appCommit === 'local') {
+    try {
+      appCommit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+        .toString()
+        .trim();
+    } catch {
+      appCommit = 'local';
+    }
   }
 
   return {
