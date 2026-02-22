@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { SunoClip, ParsedSunoOutput } from '../../types';
 import { extractSunoPlaylistId, getSunoClip, getSunoFeedOfflineAware, getSunoPlaylist } from '../../services/sunoApi';
 import HistoryToolbar from './HistoryToolbar';
@@ -85,6 +85,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SunoClip[] | null>(null);
   const [limit, setLimit] = useState<number>(50);
+  const [currentPage, setCurrentPage] = useState(1);
   const [playlistZipState, setPlaylistZipState] = useState<'idle' | 'packing' | 'done' | 'error'>('idle');
   const [playlistZipMessage, setPlaylistZipMessage] = useState('');
 
@@ -158,6 +159,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({
   const handleClearSearch = () => {
       setSearchText('');
       setSearchResults(null);
+      setCurrentPage(1);
   };
 
   const handleDownloadPlaylistZip = async () => {
@@ -182,12 +184,42 @@ const HistorySection: React.FC<HistorySectionProps> = ({
     }
   };
 
-  const displayList = (searchText && searchResults) ? searchResults : history;
+  const libraryBaseList = useMemo(() => {
+    const drafts = history.filter(c => c.id.startsWith('draft_'));
+    const nonDrafts = history.filter(c => !c.id.startsWith('draft_'));
+    return [...drafts, ...nonDrafts];
+  }, [history]);
+
+  const activeList = useMemo(() => {
+    if (searchText && searchResults) return searchResults;
+    return libraryBaseList;
+  }, [searchText, searchResults, libraryBaseList]);
+
+  const totalPages = Math.max(1, Math.ceil(activeList.length / limit));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const displayList = useMemo(() => {
+    const start = (safeCurrentPage - 1) * limit;
+    return activeList.slice(start, start + limit);
+  }, [activeList, limit, safeCurrentPage]);
+
+  const libraryTotalCount = libraryBaseList.length;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [limit, searchText]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <HistoryToolbar 
-            count={history.length}
+            totalCount={libraryTotalCount}
+            visibleCount={displayList.length}
             searchText={searchText}
             setSearchText={setSearchText}
             onAction={handleSearchOrImport}
@@ -203,17 +235,17 @@ const HistorySection: React.FC<HistorySectionProps> = ({
             isDownloadingOfflineCache={isDownloadingOfflineCache}
             offlineProgress={offlineProgress}
         />
-        <div className="flex items-center gap-3 border border-slate-700 bg-black/40 px-3 py-2 rounded-md w-fit">
+        <div className="flex items-center gap-3 border border-[var(--app-panel-border)] bg-black/40 px-3 py-2 rounded-md w-fit">
           <span className="text-[11px] uppercase tracking-wider text-slate-300">Library Source</span>
           <button
             onClick={() => onToggleUseCachedData(!useCachedData)}
-            className={`text-xs font-bold px-2.5 py-1 rounded border ${useCachedData ? 'bg-green-400/10 text-green-300 border-green-500' : 'bg-slate-800 text-slate-200 border-slate-600'}`}
+            className={`text-xs font-bold px-2.5 py-1 rounded border ${useCachedData ? 'bg-green-400/10 text-green-300 border-green-500' : 'bg-[var(--app-panel)] text-slate-200 border-slate-600'}`}
           >
             {useCachedData ? 'Local Library Mode' : 'Live Suno API'}
           </button>
         </div>
 
-        <div className="border border-slate-700 bg-black/40 px-3 py-3 rounded-md">
+        <div className="border border-[var(--app-panel-border)] bg-black/40 px-3 py-3 rounded-md">
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-slate-300">Playlist ZIP (Cached Library)</p>
             <button
@@ -241,25 +273,58 @@ const HistorySection: React.FC<HistorySectionProps> = ({
         </div>
         
         {displayList.length === 0 ? (
-             <div className="text-center py-20 bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-700">
+             <div className="text-center py-20 bg-[var(--app-panel)] rounded-xl border-2 border-dashed border-[var(--app-panel-border)]">
                 <p className="text-slate-500 mb-2">
-                    {searchText && searchResults ? "No results found for search." : "Your history is empty."}
+                    {searchText && searchResults ? "No results found for search." : "Your library is empty."}
                 </p>
                 <p className="text-xs text-slate-600">
                     {searchText && searchResults ? "Try a different keyword." : "Generated songs and drafts will appear here."}
                 </p>
              </div>
         ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {displayList.map((clip) => (
-                    <HistoryCard 
-                        key={clip.id} 
-                        clip={clip} 
-                        onClick={() => setSelectedClipId(clip.id)}
-                        isDraft={isDraft(clip)}
-                    />
-                ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {displayList.map((clip) => (
+                      <HistoryCard 
+                          key={clip.id} 
+                          clip={clip} 
+                          onClick={() => setSelectedClipId(clip.id)}
+                          isDraft={isDraft(clip)}
+                      />
+                  ))}
+              </div>
+
+              {activeList.length > limit && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border border-[var(--app-panel-border)] bg-[var(--app-panel)] px-3 py-2 rounded-lg">
+                  <p className="text-xs text-slate-400">
+                    Page {safeCurrentPage} of {totalPages}
+                    <span className="ml-2">
+                      ({(safeCurrentPage - 1) * limit + 1}-{Math.min(safeCurrentPage * limit, activeList.length)} of {activeList.length})
+                    </span>
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safeCurrentPage <= 1}
+                      className="px-3 h-9 rounded-md border border-[var(--app-panel-border)] text-xs font-bold text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--app-tab-hover)]"
+                      aria-label="Previous page"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safeCurrentPage >= totalPages}
+                      className="px-3 h-9 rounded-md border border-[var(--app-panel-border)] text-xs font-bold text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--app-tab-hover)]"
+                      aria-label="Next page"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
         )}
 
         {selectedClip && (

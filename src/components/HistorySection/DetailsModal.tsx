@@ -285,11 +285,11 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
         <div 
-            className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden" 
+            className="bg-slate-900 border border-[var(--app-panel-border)] rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden" 
             onClick={(e) => e.stopPropagation()}
         >
             {/* Modal Header */}
-            <div className="p-4 border-b border-slate-800 flex justify-between items-start bg-slate-900/50">
+            <div className="p-4 border-b border-[var(--app-panel-border)] flex justify-between items-start bg-[var(--app-panel)]">
                 <div>
                     <h2 className="text-xl font-bold text-white leading-tight pr-4 flex items-center gap-2">
                         {clipData.title}
@@ -299,14 +299,14 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                                     <title>Explicit Content</title>
                                     <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2h-4v2h4v2H9V7h6v2z" />
                                 </svg>
-                                <span className="absolute left-full ml-2 top-0 px-2 py-1 bg-slate-800 text-xs text-red-400 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-slate-700 pointer-events-none">
+                                <span className="absolute left-full ml-2 top-0 px-2 py-1 bg-[var(--app-panel)] text-xs text-red-400 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-[var(--app-panel-border)] pointer-events-none">
                                     Explicit
                                 </span>
                             </div>
                         )}
                     </h2>
                     <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
-                            <span className="font-mono bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">{clip.model_name}</span>
+                            <span className="font-mono bg-[var(--app-panel)] px-1.5 py-0.5 rounded border border-[var(--app-panel-border)]">{clip.model_name}</span>
                             <span>•</span>
                             <span>{new Date(clip.created_at).toLocaleString()}</span>
                             {isDraft && (
@@ -314,7 +314,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                             )}
                     </div>
                 </div>
-                <button onClick={onClose} className="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg hover:bg-slate-700 transition-colors">
+                <button onClick={onClose} className="text-slate-400 hover:text-white bg-[var(--app-panel)] p-1.5 rounded-lg hover:bg-[var(--app-tab-hover)] transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -330,10 +330,10 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                     {clipData.style && (
                         <div className="space-y-2">
                                 <div className="flex justify-between items-center">
-                                <h3 className="text-xs font-bold text-purple-400 uppercase tracking-wider">Style Tags</h3>
+                                <h3 className="text-xs font-bold text-[var(--app-accent)] uppercase tracking-wider">Style Tags</h3>
                                 <CopyButton text={clipData.style} label="Copy" />
                                 </div>
-                                <div className="p-3 bg-slate-800/50 border border-slate-700/50 rounded-lg">
+                                <div className="p-3 bg-[var(--app-panel)] border border-[var(--app-panel-border)]/50 rounded-lg">
                                 <p className="text-sm text-slate-200 font-mono break-words">{clipData.style}</p>
                                 </div>
                         </div>
@@ -343,7 +343,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                     {clipData.excludeStyles && (
                         <div className="space-y-2">
                             <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider">Negative Tags</h3>
-                            <div className="p-3 bg-slate-800/50 border border-slate-700/50 rounded-lg h-full">
+                            <div className="p-3 bg-[var(--app-panel)] border border-[var(--app-panel-border)]/50 rounded-lg h-full">
                                 <p className="text-sm text-red-200 font-mono break-words">{clipData.excludeStyles}</p>
                             </div>
                         </div>
@@ -351,7 +351,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                 </div>
 
                 {/* Song Stats & Parameters */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div>
                         <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Key</span>
                         <span className="text-sm font-mono text-white">{clipData.key ? clipData.key.replace('_', ' ') : 'N/A'}</span>
@@ -372,21 +372,21 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                     </div>
                     
                     {/* Control Sliders */}
-                    <div className="col-span-2 sm:col-span-2 pt-2 border-t border-slate-800 mt-2">
+                    <div className="col-span-2 sm:col-span-2 pt-2 border-t border-[var(--app-panel-border)] mt-2">
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-[10px] text-purple-400 font-bold uppercase">Weirdness</span>
-                            <span className="text-[10px] text-purple-400 font-mono">{clipData.weirdness}%</span>
+                            <span className="text-[10px] text-[var(--app-accent)] font-bold uppercase">Weirdness</span>
+                            <span className="text-[10px] text-[var(--app-accent)] font-mono">{clipData.weirdness}%</span>
                         </div>
-                        <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div className="w-full bg-[var(--app-panel)] rounded-full h-1.5 overflow-hidden">
                             <div className="bg-gradient-to-r from-purple-900 to-purple-500 h-1.5 rounded-full" style={{ width: `${clipData.weirdness}%` }}></div>
                         </div>
                     </div>
-                    <div className="col-span-2 sm:col-span-2 pt-2 border-t border-slate-800 mt-2">
+                    <div className="col-span-2 sm:col-span-2 pt-2 border-t border-[var(--app-panel-border)] mt-2">
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-[10px] text-blue-400 font-bold uppercase">Style Influence</span>
-                            <span className="text-[10px] text-blue-400 font-mono">{clipData.styleInfluence}%</span>
+                            <span className="text-[10px] text-[var(--app-accent)] font-bold uppercase">Style Influence</span>
+                            <span className="text-[10px] text-[var(--app-accent)] font-mono">{clipData.styleInfluence}%</span>
                         </div>
-                        <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div className="w-full bg-[var(--app-panel)] rounded-full h-1.5 overflow-hidden">
                             <div className="bg-gradient-to-r from-blue-900 to-blue-500 h-1.5 rounded-full" style={{ width: `${clipData.styleInfluence}%` }}></div>
                         </div>
                     </div>
@@ -394,7 +394,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
 
                 {/* Additional BPM Stats if available */}
                 {(clipData.maxBpm || clipData.minBpm) && (
-                    <div className="flex gap-4 text-xs text-slate-500 font-mono bg-slate-900/30 p-2 rounded border border-slate-800/50">
+                    <div className="flex gap-4 text-xs text-slate-500 font-mono bg-slate-900/30 p-2 rounded border border-[var(--app-panel-border)]/50">
                         {clipData.maxBpm && <span>Max BPM: <span className="text-slate-300">{clipData.maxBpm.toFixed(1)}</span></span>}
                         {clipData.minBpm && <span>Min BPM: <span className="text-slate-300">{clipData.minBpm.toFixed(1)}</span></span>}
                     </div>
@@ -402,7 +402,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
 
                 {/* Lyrics Alignment Section */}
                 {!isDraft && (
-                    <div className="space-y-3 pt-2 border-t border-slate-800">
+                    <div className="space-y-3 pt-2 border-t border-[var(--app-panel-border)]">
                             <div className="flex justify-between items-center flex-wrap gap-2">
                             <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Timing & Lyrics</h3>
                             <div className="flex flex-wrap items-center gap-2">
@@ -435,7 +435,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                                             {!clip.lrcContent ? (
                                             <button
                                                 onClick={handleGenerateLRC}
-                                                className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium rounded-lg transition-colors shadow-sm"
+                                                className="px-3 py-1 bg-[var(--app-accent)] hover:bg-[var(--app-accent)] text-white text-xs font-medium rounded-lg transition-colors shadow-sm"
                                             >
                                                 Gen LRC
                                             </button>
@@ -444,7 +444,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                                                 <CopyButton text={clip.lrcContent} label="LRC" />
                                                 <button
                                                     onClick={() => handleDownloadTextFile(clip.lrcContent!, `${clip.title || 'song'}.lrc`)}
-                                                    className="px-2 py-1 bg-purple-700/50 hover:bg-purple-600 text-purple-100 text-xs font-medium rounded-lg border border-purple-600/50"
+                                                    className="px-2 py-1 bg-purple-700/50 hover:bg-[var(--app-accent)] text-purple-100 text-xs font-medium rounded-lg border border-purple-600/50"
                                                     title="Download LRC"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
@@ -455,7 +455,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                                                 </button>
                                                 <button
                                                     onClick={handleGenerateLRC}
-                                                    className="px-2 py-1 bg-purple-800 hover:bg-purple-700 text-purple-200 text-xs font-medium rounded-lg border border-purple-600/30"
+                                                    className="px-2 py-1 bg-purple-800 hover:bg-[var(--app-accent)]/80 text-purple-200 text-xs font-medium rounded-lg border border-purple-600/30"
                                                     title="Redo LRC with current lyrics"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
@@ -471,7 +471,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                                             {!clip.srtContent ? (
                                             <button
                                                 onClick={handleGenerateSRT}
-                                                className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors shadow-sm"
+                                                className="px-3 py-1 bg-[var(--app-accent)] hover:bg-[var(--app-accent)] text-white text-xs font-medium rounded-lg transition-colors shadow-sm"
                                             >
                                                 Gen SRT
                                             </button>
@@ -480,7 +480,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                                                 <CopyButton text={clip.srtContent} label="SRT" />
                                                 <button
                                                     onClick={() => handleDownloadTextFile(clip.srtContent!, `${clip.title || 'song'}.srt`)}
-                                                    className="px-2 py-1 bg-blue-700/50 hover:bg-blue-600 text-blue-100 text-xs font-medium rounded-lg border border-blue-600/50"
+                                                    className="px-2 py-1 bg-blue-700/50 hover:bg-[var(--app-accent)] text-blue-100 text-xs font-medium rounded-lg border border-blue-600/50"
                                                     title="Download SRT"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
@@ -491,7 +491,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                                                 </button>
                                                 <button
                                                     onClick={handleGenerateSRT}
-                                                    className="px-2 py-1 bg-blue-800 hover:bg-blue-700 text-blue-200 text-xs font-medium rounded-lg border border-blue-600/30"
+                                                    className="px-2 py-1 bg-blue-800 hover:bg-[var(--app-accent)]/80 text-blue-200 text-xs font-medium rounded-lg border border-blue-600/30"
                                                     title="Redo SRT with current lyrics"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
@@ -515,14 +515,14 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                             )}
 
                             {clip.alignmentData && (
-                                <div className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden flex flex-col h-[300px]">
-                                    <div className="bg-slate-900/80 px-4 py-2 flex justify-between text-xs font-semibold text-slate-400 border-b border-slate-800">
+                                <div className="bg-slate-950 border border-[var(--app-panel-border)] rounded-lg overflow-hidden flex flex-col h-[300px]">
+                                    <div className="bg-[var(--app-panel)] px-4 py-2 flex justify-between text-xs font-semibold text-slate-400 border-b border-[var(--app-panel-border)]">
                                         <span>Timestamp</span>
                                         <span>Word</span>
                                     </div>
                                     <div className="overflow-y-auto custom-scrollbar p-2 space-y-1">
                                         {clip.alignmentData.map((item, idx) => (
-                                            <div key={idx} className="flex hover:bg-slate-800/50 rounded px-2 py-1 transition-colors group">
+                                            <div key={idx} className="flex hover:bg-[var(--app-panel)] rounded px-2 py-1 transition-colors group">
                                                 <span className="text-xs font-mono text-cyan-500 w-24 shrink-0 group-hover:text-cyan-400">
                                                     {formatDisplayTime(item.start_s)}
                                                 </span>
@@ -539,12 +539,12 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
 
                 {/* Key Prompt (Lyrics with Tags) */}
                 {clipData.prompt && (
-                        <div className="space-y-2 pt-2 border-t border-slate-800">
+                        <div className="space-y-2 pt-2 border-t border-[var(--app-panel-border)]">
                             <div className="flex justify-between items-center">
                             <h3 className="text-xs font-bold text-pink-400 uppercase tracking-wider">Key Prompt (Lyrics with Tags)</h3>
                             <CopyButton text={clipData.prompt} label="Copy" />
                             </div>
-                            <div className="p-4 bg-slate-900 border border-slate-800 rounded-lg max-h-[300px] overflow-y-auto custom-scrollbar">
+                            <div className="p-4 bg-slate-900 border border-[var(--app-panel-border)] rounded-lg max-h-[300px] overflow-y-auto custom-scrollbar">
                             <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">{clipData.prompt}</pre>
                             </div>
                     </div>
@@ -553,31 +553,31 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                     {/* Clean Lyrics (Editable) */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                        <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                        <h3 className="text-xs font-bold text-[var(--app-accent)] uppercase tracking-wider">
                             Clean Lyrics (Editable)
                         </h3>
                         <div className="flex gap-2">
                             <button 
                                 onClick={handleSaveLyrics}
-                                className="text-xs text-emerald-400 hover:text-emerald-300 px-2 py-1 hover:bg-emerald-900/30 rounded transition-colors border border-transparent hover:border-emerald-800"
+                                className="text-xs text-[var(--app-accent)] hover:text-emerald-300 px-2 py-1 hover:bg-emerald-900/30 rounded transition-colors border border-transparent hover:border-emerald-800"
                             >
                                 Save Edits
                             </button>
                             <CopyButton text={editedLyrics} label="Copy" />
                         </div>
                         </div>
-                        <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+                        <div className="bg-slate-900 border border-[var(--app-panel-border)] rounded-lg overflow-hidden">
                         <textarea 
                             value={editedLyrics}
                             onChange={(e) => setEditedLyrics(e.target.value)}
-                            className="w-full h-[200px] bg-slate-900 p-4 text-sm text-slate-400 font-mono resize-none focus:outline-none focus:bg-slate-800/50 transition-colors custom-scrollbar leading-relaxed"
+                            className="w-full h-[200px] bg-slate-900 p-4 text-sm text-slate-400 font-mono resize-none focus:outline-none focus:bg-[var(--app-panel)] transition-colors custom-scrollbar leading-relaxed"
                             placeholder="Edit lyrics structure here to improve synchronization..."
                         />
                         </div>
                 </div>
 
                 {/* ID Linking Section */}
-                <div className="pt-4 border-t border-slate-800">
+                <div className="pt-4 border-t border-[var(--app-panel-border)]">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
                         Link Suno Generation
                     </label>
@@ -587,12 +587,12 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                             value={manualIdInput}
                             onChange={(e) => setManualIdInput(e.target.value)}
                             placeholder="Paste Suno Clip ID (UUID) here..."
-                            className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-purple-500 outline-none"
+                            className="flex-1 bg-slate-950 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-[var(--app-accent)]/50 outline-none"
                         />
                         <button 
                             onClick={handleLinkSunoId}
                             disabled={!manualIdInput.trim()}
-                            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                            className="px-4 py-2 bg-[var(--app-panel)] hover:bg-[var(--app-tab-hover)] disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
                         >
                             Link ID
                         </button>
@@ -603,7 +603,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                 </div>
 
                 {!isDraft && (
-                  <div className="pt-4 border-t border-slate-800 space-y-3">
+                  <div className="pt-4 border-t border-[var(--app-panel-border)] space-y-3">
                     <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Album Builder</h3>
                     {libraryLoading ? (
                       <p className="text-xs text-slate-500">Loading album metadata...</p>
@@ -617,7 +617,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                               value={tagsInput}
                               onChange={(e) => setTagsInput(e.target.value)}
                               placeholder="anthemic, dark-pop, synthwave"
-                              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
+                              className="flex-1 bg-slate-950 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
                             />
                             <button
                               onClick={handleSaveTags}
@@ -635,7 +635,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                             <select
                               value={selectedAlbumId}
                               onChange={(e) => setSelectedAlbumId(e.target.value ? Number(e.target.value) : '')}
-                              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
+                              className="flex-1 bg-slate-950 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
                             >
                               <option value="">Select album</option>
                               {libraryAlbums.map((album) => (
@@ -662,12 +662,12 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                               value={newAlbumName}
                               onChange={(e) => setNewAlbumName(e.target.value)}
                               placeholder="Neon Tides Act II"
-                              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
+                              className="flex-1 bg-slate-950 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
                             />
                             <button
                               onClick={handleCreateAlbumAndAddSong}
                               disabled={savingLibrary || !newAlbumName.trim()}
-                              className="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg disabled:opacity-60"
+                              className="px-3 py-2 bg-[var(--app-accent)] hover:bg-[var(--app-accent)] text-white text-xs font-bold rounded-lg disabled:opacity-60"
                             >
                               Create + Add
                             </button>
@@ -688,7 +688,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                                     key={albumId}
                                     onClick={() => handleRemoveCurrentSongFromAlbum(albumId)}
                                     disabled={savingLibrary}
-                                    className="text-xs px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-200 hover:bg-red-900/30 hover:border-red-800 hover:text-red-300 disabled:opacity-60"
+                                    className="text-xs px-2 py-1 rounded-md bg-[var(--app-panel)] border border-[var(--app-panel-border)] text-slate-200 hover:bg-red-900/30 hover:border-red-800 hover:text-red-300 disabled:opacity-60"
                                     title="Click to remove from album"
                                   >
                                     {album.name} x
@@ -709,14 +709,14 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex justify-end gap-3">
+            <div className="p-4 border-t border-[var(--app-panel-border)] bg-[var(--app-panel)] flex justify-end gap-3">
                     {!isDraft && (
                         <>
                             <a 
                             href={`https://cdn1.suno.ai/${clip.id}.mp3`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2"
+                            className="px-4 py-2 bg-[var(--app-panel)] hover:bg-[var(--app-tab-hover)] border border-slate-600 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2"
                             title="Download MP3"
                             >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -731,7 +731,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                             href={`https://suno.com/song/${clip.id}`}
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-purple-900/20"
+                            className="px-4 py-2 bg-[var(--app-accent)] hover:bg-[var(--app-accent)] text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-purple-900/20"
                             >
                             Open in Suno
                             </a>
@@ -739,7 +739,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({ clip, onClose, onUpdateClip
                     )}
                     <button 
                     onClick={onClose}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    className="px-4 py-2 bg-[var(--app-panel)] hover:bg-[var(--app-tab-hover)] text-white text-sm font-medium rounded-lg transition-colors"
                     >
                     Close
                     </button>

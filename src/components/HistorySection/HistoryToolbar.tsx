@@ -1,7 +1,8 @@
 import React from 'react';
 
 interface HistoryToolbarProps {
-  count: number;
+  totalCount: number;
+  visibleCount: number;
   searchText: string;
   setSearchText: (text: string) => void;
   onAction: () => void;
@@ -19,7 +20,7 @@ interface HistoryToolbarProps {
 }
 
 const HistoryToolbar: React.FC<HistoryToolbarProps> = ({ 
-    count, searchText, setSearchText, onAction, isActionLoading, 
+    totalCount, visibleCount, searchText, setSearchText, onAction, isActionLoading, 
     onFetchHistory, isSyncing, syncProgress,
     limit, setLimit, onClearSearch, isShowingSearchResults,
     onDownloadOfflineCache, isDownloadingOfflineCache, offlineProgress
@@ -32,7 +33,7 @@ const HistoryToolbar: React.FC<HistoryToolbarProps> = ({
   };
 
   return (
-    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 backdrop-blur-sm shadow-sm">
+    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-[var(--app-panel)] p-4 rounded-xl border border-[var(--app-panel-border)]/50 backdrop-blur-sm shadow-sm">
         <div className="flex-shrink-0">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 {isShowingSearchResults ? 'Search Results' : 'Your Library'}
@@ -47,7 +48,11 @@ const HistoryToolbar: React.FC<HistoryToolbarProps> = ({
                         </svg>
                     </button>
                 )}
-                {!isShowingSearchResults && count > 0 && <span className="text-xs font-normal text-slate-400">({count} items)</span>}
+                {!isShowingSearchResults && totalCount > 0 && (
+                    <span className="text-xs font-normal text-slate-400">
+                        ({totalCount} total{visibleCount < totalCount ? `, showing ${visibleCount}` : ''})
+                    </span>
+                )}
             </h2>
             <p className="text-xs text-slate-400">
                 {isShowingSearchResults 
@@ -66,7 +71,7 @@ const HistoryToolbar: React.FC<HistoryToolbarProps> = ({
                         onChange={(e) => setSearchText(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Search or Paste ID..."
-                        className="bg-slate-950 border border-slate-700 text-white text-xs rounded-lg pl-8 pr-3 py-2 focus:ring-1 focus:ring-purple-500 outline-none w-full"
+                        className="bg-slate-950 border border-[var(--app-panel-border)] text-white text-xs rounded-lg pl-8 pr-3 py-2 focus:ring-1 focus:ring-[var(--app-accent)]/50 outline-none w-full"
                     />
                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
@@ -77,19 +82,19 @@ const HistoryToolbar: React.FC<HistoryToolbarProps> = ({
                 <button 
                     onClick={onAction}
                     disabled={isActionLoading || !searchText.trim()}
-                    className="px-3 py-2 bg-slate-800 hover:bg-purple-600 text-white text-xs font-bold rounded-lg transition-colors border border-slate-700 whitespace-nowrap"
+                    className="px-3 py-2 bg-[var(--app-panel)] hover:bg-[var(--app-accent)] text-white text-xs font-bold rounded-lg transition-colors border border-[var(--app-panel-border)] whitespace-nowrap"
                 >
                     {isActionLoading ? '...' : 'Add'}
                 </button>
             </div>
 
             {/* Sync Controls */}
-            <div className="flex items-center gap-2 w-full sm:w-auto bg-slate-900/50 p-1 rounded-lg border border-slate-700">
+            <div className="flex items-center gap-2 w-full sm:w-auto bg-[var(--app-panel)] p-1 rounded-lg border border-[var(--app-panel-border)]">
                 <select
                     value={limit}
                     onChange={(e) => setLimit(Number(e.target.value))}
                     disabled={isSyncing}
-                    className="bg-slate-800 border-none text-white text-xs rounded-md py-1.5 px-2 focus:ring-1 focus:ring-purple-500 outline-none cursor-pointer"
+                    className="bg-[var(--app-panel)] border-none text-white text-xs rounded-md py-1.5 px-2 focus:ring-1 focus:ring-[var(--app-accent)]/50 outline-none cursor-pointer"
                 >
                     <option value={50}>50 items</option>
                     <option value={100}>100 items</option>
@@ -102,7 +107,7 @@ const HistoryToolbar: React.FC<HistoryToolbarProps> = ({
                     className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap
                     ${isSyncing 
                     ? 'bg-slate-700/50 text-slate-400 cursor-wait' 
-                    : 'bg-purple-600 hover:bg-purple-500 text-white'}`}
+                    : 'bg-[var(--app-accent)] hover:bg-[var(--app-accent)] text-white'}`}
                 >
                     {isSyncing ? (
                         <>

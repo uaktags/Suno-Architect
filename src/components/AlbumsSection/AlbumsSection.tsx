@@ -92,7 +92,7 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-700/70 bg-slate-900/30 p-6 text-sm text-slate-300">
+      <div className="rounded-2xl border border-[var(--app-panel-border)]/70 bg-slate-900/30 p-6 text-sm text-slate-300">
         Loading library albums...
       </div>
     );
@@ -114,13 +114,13 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
       )}
 
       {albums.length === 0 ? (
-        <div className="text-center py-20 bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-700">
+        <div className="text-center py-20 bg-[var(--app-panel)] rounded-xl border-2 border-dashed border-[var(--app-panel-border)]">
           <p className="text-slate-400">No albums yet.</p>
-          <p className="text-xs text-slate-500 mt-1">Create albums from track details in History, then manage them here.</p>
+          <p className="text-xs text-slate-500 mt-1">Create albums from track details in Library, then manage them here.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-4 rounded-2xl border border-slate-700/70 bg-slate-900/40 p-3">
+          <div className="lg:col-span-4 rounded-2xl border border-[var(--app-panel-border)]/70 bg-[var(--app-panel)] p-3">
             <div className="flex items-center justify-between px-2 py-1 mb-1">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Albums</span>
               <span className="text-xs text-slate-500">{albums.length}</span>
@@ -132,8 +132,8 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
                   onClick={() => setSelectedAlbumId(album.id)}
                   className={`w-full text-left rounded-xl border px-3 py-3 transition-colors ${
                     selectedAlbumId === album.id
-                      ? 'border-purple-500/60 bg-purple-500/10'
-                      : 'border-slate-700/70 bg-slate-800/40 hover:border-slate-600'
+                      ? 'border-purple-500/60 bg-[var(--app-accent)]/10'
+                      : 'border-[var(--app-panel-border)]/70 bg-[var(--app-panel)]/40 hover:border-slate-600'
                   }`}
                 >
                   <div className="font-semibold text-white truncate">{album.name}</div>
@@ -143,12 +143,12 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
             </div>
           </div>
 
-          <div className="lg:col-span-8 rounded-2xl border border-slate-700/70 bg-slate-900/40 p-4">
+          <div className="lg:col-span-8 rounded-2xl border border-[var(--app-panel-border)]/70 bg-[var(--app-panel)] p-4">
             {!selectedAlbum ? (
               <div className="text-sm text-slate-400">Select an album.</div>
             ) : (
               <>
-                <div className="flex items-start justify-between gap-4 border-b border-slate-700/70 pb-3 mb-3">
+                <div className="flex items-start justify-between gap-4 border-b border-[var(--app-panel-border)]/70 pb-3 mb-3">
                   <div>
                     <h3 className="text-xl font-bold text-white">{selectedAlbum.name}</h3>
                     {selectedAlbum.description && (
@@ -158,7 +158,7 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
                   <button
                     onClick={loadAlbums}
                     disabled={saving}
-                    className="text-xs rounded-md border border-slate-600 px-2 py-1 text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+                    className="text-xs rounded-md border border-slate-600 px-2 py-1 text-slate-300 hover:bg-[var(--app-panel)] disabled:opacity-50"
                   >
                     Refresh
                   </button>
@@ -171,7 +171,7 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
                     {selectedAlbum.songs.map((song, index) => (
                       <div
                         key={`${selectedAlbum.id}:${song.songId}`}
-                        className="rounded-xl border border-slate-700/70 bg-slate-800/40 px-3 py-2 flex items-center justify-between gap-3"
+                        className="rounded-xl border border-[var(--app-panel-border)]/70 bg-[var(--app-panel)]/40 px-3 py-2 flex items-center justify-between gap-3"
                       >
                         <div className="min-w-0">
                           <div className="text-xs text-slate-500 font-semibold">#{index + 1}</div>
@@ -184,14 +184,14 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({ history }) => {
                           <button
                             onClick={() => moveTrack(index, index - 1)}
                             disabled={saving || index === 0}
-                            className="rounded-md border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700 disabled:opacity-40"
+                            className="rounded-md border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-[var(--app-tab-hover)] disabled:opacity-40"
                           >
                             Up
                           </button>
                           <button
                             onClick={() => moveTrack(index, index + 1)}
                             disabled={saving || index === selectedAlbum.songs.length - 1}
-                            className="rounded-md border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700 disabled:opacity-40"
+                            className="rounded-md border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-[var(--app-tab-hover)] disabled:opacity-40"
                           >
                             Down
                           </button>
