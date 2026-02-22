@@ -152,7 +152,7 @@ export const ProviderSwitcher: React.FC<ProviderSwitcherProps> = ({
             setIsProviderOpen(!isProviderOpen);
             setIsModelOpen(false);
           }}
-          className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 text-slate-300 text-xs font-medium py-2 px-3 rounded-lg hover:bg-slate-700/50 hover:text-white transition-all min-w-[100px] justify-between"
+          className="flex items-center gap-2 bg-[var(--app-panel)] border border-[var(--app-panel-border)] text-slate-300 text-xs font-medium py-2 px-3 rounded-lg hover:bg-[var(--app-tab-hover)]/50 hover:text-white transition-all min-w-[100px] justify-between"
           title="Select Provider"
         >
           <span className="truncate">{currentProviderLabel}</span>
@@ -171,7 +171,7 @@ export const ProviderSwitcher: React.FC<ProviderSwitcherProps> = ({
         </button>
 
         {isProviderOpen && (
-          <div className="absolute top-full left-0 mt-1 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50">
+          <div className="absolute top-full left-0 mt-1 w-40 bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-lg shadow-xl overflow-hidden z-50">
             {Object.entries(PROVIDER_LABELS).map(([type, label]) => (
               <button
                 key={type}
@@ -183,13 +183,13 @@ export const ProviderSwitcher: React.FC<ProviderSwitcherProps> = ({
                 }}
                 className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between
                   ${providerConfig.type === type
-                    ? 'bg-purple-600/20 text-purple-300'
-                    : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                    ? 'bg-[var(--app-accent)]/20 text-purple-300'
+                    : 'text-slate-300 hover:bg-[var(--app-tab-hover)]/50 hover:text-white'
                   }`}
               >
                 <span>{label}</span>
                 {providerConfig.type === type && (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-purple-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-[var(--app-accent)]">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 )}
@@ -209,7 +209,7 @@ export const ProviderSwitcher: React.FC<ProviderSwitcherProps> = ({
             setIsProviderOpen(false);
           }}
           disabled={isLoadingModels}
-          className="w-full flex items-center gap-2 bg-slate-800/50 border border-slate-700 text-slate-300 text-xs font-medium py-2 px-3 rounded-lg hover:bg-slate-700/50 hover:text-white transition-all justify-between disabled:opacity-50"
+          className="w-full flex items-center gap-2 bg-[var(--app-panel)] border border-[var(--app-panel-border)] text-slate-300 text-xs font-medium py-2 px-3 rounded-lg hover:bg-[var(--app-tab-hover)]/50 hover:text-white transition-all justify-between disabled:opacity-50"
           title="Select Model"
         >
           <span className="truncate flex-1 text-left">
@@ -230,9 +230,9 @@ export const ProviderSwitcher: React.FC<ProviderSwitcherProps> = ({
         </button>
 
         {isModelOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 flex flex-col max-h-60">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-lg shadow-xl z-50 flex flex-col max-h-60">
             {availableModels.length > 0 && (
-              <div className="p-2 border-b border-slate-700">
+              <div className="p-2 border-b border-[var(--app-panel-border)]">
                 <input
                   ref={modelSearchInputRef}
                   type="text"
@@ -260,7 +260,7 @@ export const ProviderSwitcher: React.FC<ProviderSwitcherProps> = ({
                     e.stopPropagation();
                   }}
                   placeholder="Search models..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]/50"
                 />
               </div>
             )}
@@ -277,15 +277,15 @@ export const ProviderSwitcher: React.FC<ProviderSwitcherProps> = ({
                         e.stopPropagation();
                         handleModelChange(model);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between hover:bg-slate-700/50
+                      className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between hover:bg-[var(--app-tab-hover)]/50
                         ${providerConfig.model === model
-                          ? 'bg-purple-600/20 text-purple-300'
+                          ? 'bg-[var(--app-accent)]/20 text-purple-300'
                           : 'text-slate-300 hover:text-white'
                         }`}
                     >
                       <span className="truncate">{model}</span>
                       {providerConfig.model === model && (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-purple-400 flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-[var(--app-accent)] flex-shrink-0">
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
                       )}
@@ -317,7 +317,7 @@ export const ProviderSwitcher: React.FC<ProviderSwitcherProps> = ({
           e.stopPropagation();
           onOpenSettings();
         }}
-        className="bg-slate-800/50 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700/50 p-2 rounded-lg transition-all"
+        className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] text-slate-400 hover:text-white hover:bg-[var(--app-tab-hover)]/50 p-2 rounded-lg transition-all"
         title="Configure Provider Settings"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">

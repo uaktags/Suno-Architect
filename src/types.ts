@@ -77,6 +77,9 @@ export interface PromptSettings {
   constraints: LyricalConstraints;
 }
 
+export type AppTheme = 'midnight' | 'neon-synth' | 'dawn-studio' | 'forest-night';
+export type AppLayout = 'topbar' | 'sidebar' | 'studio';
+
 export interface FileContext {
   mimeType: string;
   data: string; // Base64 data URL
@@ -98,9 +101,24 @@ export interface GenerationOptions {
   objectivePreset?: AlbumObjectivePreset;
 }
 
-export type ViewMode = 'generator' | 'history' | 'albums' | 'album-builder' | 'visualizer' | 'web-audio-master';
+export type ViewMode = 'generator' | 'history' | 'activity-history' | 'albums' | 'album-builder' | 'visualizer' | 'web-audio-master';
 
-export type Qt6Style = 'wave' | 'bars' | 'circle' | 'circular-wave';
+export type Qt6Style =
+  | 'wave'
+  | 'bars'
+  | 'circle'
+  | 'circular-wave'
+  | 'stereo-wave'
+  | 'stereo-bars'
+  | 'log-bars'
+  | 'led-bars'
+  | 'radial-spectrum'
+  | 'wave-spectrum'
+  | 'vu-meter'
+  | 'spectrogram'
+  | 'particle-pulse'
+  | 'organic-blob'
+  | 'multi-band-ring';
 
 export type ProviderType = 'gemini' | 'openrouter' | 'openapi';
 

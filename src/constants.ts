@@ -1,4 +1,40 @@
-import { SunoLibrary, LyricalConstraints } from "./types";
+import React from 'react';
+import { SunoLibrary, LyricalConstraints, AppTheme, AppLayout } from "./types";
+
+export const APP_THEMES: { id: AppTheme; label: string }[] = [
+  { id: 'midnight', label: 'Midnight Slate' },
+  { id: 'neon-synth', label: 'Neon Synth' },
+  { id: 'dawn-studio', label: 'Dawn Studio' },
+  { id: 'forest-night', label: 'Forest Night' },
+];
+
+export const APP_LAYOUTS: { id: AppLayout; label: string; icon: React.ReactNode }[] = [
+  {
+    id: 'topbar',
+    label: 'Top Bar',
+    icon: React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2', className: 'w-4 h-4' },
+      React.createElement('rect', { x: '3', y: '3', width: '18', height: '6', rx: '2' }),
+      React.createElement('rect', { x: '3', y: '12', width: '18', height: '9', rx: '2' })
+    ),
+  },
+  {
+    id: 'sidebar',
+    label: 'Sidebar',
+    icon: React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2', className: 'w-4 h-4' },
+      React.createElement('rect', { x: '3', y: '3', width: '6', height: '18', rx: '2' }),
+      React.createElement('rect', { x: '12', y: '3', width: '9', height: '18', rx: '2' })
+    ),
+  },
+  {
+    id: 'studio',
+    label: 'Studio',
+    icon: React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2', className: 'w-4 h-4' },
+      React.createElement('rect', { x: '2', y: '2', width: '20', height: '20', rx: '2' }),
+      React.createElement('path', { d: 'M7 2v20' }),
+      React.createElement('path', { d: 'M17 2v20' })
+    ),
+  },
+];
 
 export const SUNO_MODEL_MAPPINGS = [
   { label: "V5", value: "chirp-crow" },

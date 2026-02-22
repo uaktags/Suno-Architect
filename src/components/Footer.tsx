@@ -4,14 +4,14 @@ interface FooterProps {
 
 const Footer = ({ git }: FooterProps) => {
   return (
-    <footer className="w-full py-6 text-center border-t border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+    <footer className="w-full py-6 text-center border-t border-[var(--app-panel-border)] bg-[var(--app-panel)] backdrop-blur-sm">
       <p className="text-slate-500 text-sm">
         Open Source Project. View source on{' '}
         <a 
           href={git} 
           target="_blank" 
           rel="noopener noreferrer" 
-          className="text-purple-400 hover:text-purple-300 hover:underline transition-colors font-medium"
+          className="text-[var(--app-accent)] hover:text-[var(--app-accent)] hover:underline transition-colors font-medium"
         >
           GitHub
         </a>

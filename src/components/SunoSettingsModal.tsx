@@ -13,6 +13,7 @@ interface SunoSettingsModalProps {
   initialModel: string;
   initialPromptSettings: PromptSettings;
   currentCredits: number | null;
+  isEmbedded?: boolean;
 }
 
 const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({ 
@@ -22,7 +23,8 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
   initialCookie, 
   initialModel,
   initialPromptSettings,
-  currentCredits 
+  currentCredits,
+  isEmbedded = false
 }) => {
   const [activeTab, setActiveTab] = useState<'connection' | 'prompt'>('connection');
   
@@ -141,126 +143,59 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
-  const handleSave = () => {
-    // Reconstruct objects from string inputs
-    const updatedLibrary: SunoLibrary = {
-        genres: libGenres.split(',').map(s => s.trim()).filter(Boolean),
-        structures: libStructures.split(',').map(s => s.trim()).filter(Boolean),
-        vocalStyles: libVocals.split(',').map(s => s.trim()).filter(Boolean),
-        production: libProduction.split(',').map(s => s.trim()).filter(Boolean),
-        theory: libTheory.split(',').map(s => s.trim()).filter(Boolean),
-    };
-
-    const updatedConstraints: LyricalConstraints = {
-        forbidden: constForbidden.split(',').map(s => s.trim()).filter(Boolean),
-        forbiddenAdjectives: constAdjectives.split(',').map(s => s.trim()).filter(Boolean),
-        forbiddenPhrases: constPhrases.split(',').map(s => s.trim()).filter(Boolean),
-        forbiddenRhymes: constRhymes
-    };
-    
-    // If we are in V1 or V2 mode, regenerate the prompt text based on the NEW library/constraints before saving.
-    // If V3, regenerate using static.
-    let finalSystemPrompt = promptSettings.customSystemPrompt;
-    if (promptSettings.version !== 'custom') {
-        const kb = buildKnowledgeBase(updatedLibrary);
-        if (promptSettings.version === 'v1') {
-            finalSystemPrompt = GET_PROMPT_V1(kb);
-        } else if (promptSettings.version === 'v2') {
-            finalSystemPrompt = GET_PROMPT_V2(kb, updatedConstraints);
-        } else if (promptSettings.version === 'v3') {
-            finalSystemPrompt = GET_PROMPT_V3();
-        }
-    }
-
-    const finalSettings: PromptSettings = {
-        version: promptSettings.version,
-        customSystemPrompt: finalSystemPrompt,
-        library: updatedLibrary,
-        constraints: updatedConstraints
-    };
-
-    onSave(cookie, model, finalSettings);
-    onClose();
-  };
-
   const handleVerify = async () => {
-      if (!cookie) {
-          setVerifyStatus({ success: false, msg: "Please enter a token first." });
-          return;
-      }
       setIsVerifying(true);
       setVerifyStatus(null);
       try {
           const credits = await getSunoCredits(cookie);
           setLocalCredits(credits);
-          setVerifyStatus({ success: true, msg: "Connected Successfully!" });
+          setVerifyStatus({ success: true, msg: `Verified! Available Credits: ${credits}` });
       } catch (e: any) {
+          setVerifyStatus({ success: false, msg: e.message || "Failed to verify. Check your token." });
           setLocalCredits(null);
-          setVerifyStatus({ success: false, msg: "Login Failed. Check token." });
       } finally {
           setIsVerifying(false);
       }
   };
 
-  const tokenSnippet = `(async () => {
-    const sessionToken = await window?.Clerk?.session?.getToken?.();
+  const handleSave = () => {
+      const currentLib: SunoLibrary = {
+          genres: libGenres.split(',').map(s => s.trim()).filter(Boolean),
+          structures: libStructures.split(',').map(s => s.trim()).filter(Boolean),
+          vocalStyles: libVocals.split(',').map(s => s.trim()).filter(Boolean),
+          production: libProduction.split(',').map(s => s.trim()).filter(Boolean),
+          theory: libTheory.split(',').map(s => s.trim()).filter(Boolean),
+      };
 
-    if (!sessionToken) {
-      console.error("Session token not found. Make sure you are logged in at suno.com");
-      return;
-    }
+      const currentConstraints: LyricalConstraints = {
+          forbidden: constForbidden.split(',').map(s => s.trim()).filter(Boolean),
+          forbiddenAdjectives: constAdjectives.split(',').map(s => s.trim()).filter(Boolean),
+          forbiddenPhrases: constPhrases.split(',').map(s => s.trim()).filter(Boolean),
+          forbiddenRhymes: constRhymes
+      };
 
-    console.log("%c Suno Session Token Found! ", "background: #222; color: #bada55; font-size: 14px;");
-    console.log(sessionToken);
+      const newSettings: PromptSettings = {
+          ...promptSettings,
+          library: currentLib,
+          constraints: currentConstraints
+      };
 
-    const copyWithExecCommand = (text) => {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.setAttribute("readonly", "");
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      let ok = false;
-      try {
-        ok = document.execCommand("copy");
-      } catch (err) {
-        ok = false;
-      }
-      document.body.removeChild(textarea);
-      return ok;
-    };
+      onSave(cookie, model, newSettings);
+      onClose();
+  };
 
-    let copied = false;
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(sessionToken);
-        copied = true;
-      }
-    } catch (err) {}
+  const tokenSnippet = `const t = await window.clerk.session.getToken({template:"suno-api"}); console.log("Bearer " + t);`;
 
-    if (!copied) {
-      copied = copyWithExecCommand(sessionToken);
-    }
+  if (!isOpen) return null;
 
-    if (copied) {
-      console.log("%c Result copied to clipboard automatically.", "color: gray;");
-    } else {
-      console.warn("Auto-copy failed. Token is printed above for manual copy.");
-    }
-})();`;
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
-        
-        {/* Modal Header & Tabs */}
-        <div className="flex-shrink-0 border-b border-slate-800 bg-slate-900/80 p-4 rounded-t-2xl flex justify-between items-center">
+  const content = (
+    <div className={`flex flex-col ${isEmbedded ? 'h-full' : 'bg-slate-900 border border-[var(--app-panel-border)] rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh]'}`}>
+      
+      {/* Modal Header & Tabs */}
+      {!isEmbedded && (
+        <div className="flex-shrink-0 border-b border-[var(--app-panel-border)] bg-[var(--app-panel)] p-4 rounded-t-2xl flex justify-between items-center">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <span className="bg-slate-800 p-2 rounded-lg">
+                <span className="bg-[var(--app-panel)] p-2 rounded-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-pink-400">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polygon points="10 8 16 12 10 16 10 8"></polygon>
@@ -270,18 +205,21 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
             </h2>
             <button onClick={onClose} className="text-slate-400 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
-        
-        {/* Tabs */}
-        <div className="flex bg-slate-950/50 border-b border-slate-800">
+      )}
+
+      {isEmbedded && <h3 className="text-lg font-bold text-white mb-6 p-6 pb-0">Suno Integration</h3>}
+      
+      {/* Tabs */}
+      <div className="flex bg-slate-950/50 border-b border-[var(--app-panel-border)]">
             <button 
                 onClick={() => setActiveTab('connection')}
-                className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'connection' ? 'text-purple-400 border-b-2 border-purple-400 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'connection' ? 'text-[var(--app-accent)] border-b-2 border-purple-400 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
             >
                 API Connection
             </button>
             <button 
                 onClick={() => setActiveTab('prompt')}
-                className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'prompt' ? 'text-purple-400 border-b-2 border-purple-400 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'prompt' ? 'text-[var(--app-accent)] border-b-2 border-purple-400 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
             >
                 Prompt Engineering
             </button>
@@ -316,7 +254,7 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
                         <div className="flex justify-between items-center mb-2">
                             <label className="block text-sm font-medium text-slate-300">Suno Token / Cookie</label>
                             {localCredits !== null && (
-                                <span className="text-xs font-bold text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded">
+                                <span className="text-xs font-bold text-[var(--app-accent)] bg-emerald-900/30 px-2 py-1 rounded">
                                     Credits: {localCredits}
                                 </span>
                             )}
@@ -325,7 +263,7 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
                             value={cookie}
                             onChange={(e) => setCookie(e.target.value)}
                             placeholder="Paste your Bearer Token (ey...) here..."
-                            className="w-full h-24 bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-300 placeholder-slate-600 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none custom-scrollbar resize-none"
+                            className="w-full h-24 bg-slate-950 border border-[var(--app-panel-border)] rounded-xl p-3 text-xs font-mono text-slate-300 placeholder-slate-600 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none custom-scrollbar resize-none"
                         />
                         <div className="flex justify-between items-center mt-2">
                              <span className="text-yellow-500/80 text-xs block bg-yellow-900/10 p-2 rounded border border-yellow-900/30 flex-1 mr-4">
@@ -347,12 +285,12 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
                         )}
                     </div>
 
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700" ref={modelDropdownRef}>
+                    <div className="bg-[var(--app-panel)] p-4 rounded-xl border border-[var(--app-panel-border)]" ref={modelDropdownRef}>
                         <label className="block text-sm font-medium text-slate-300 mb-2">Generation Model</label>
                         <div className="relative">
                             <button
                                 onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all flex items-center justify-between"
+                                className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all flex items-center justify-between"
                             >
                                 <span>{SUNO_MODEL_MAPPINGS.find(m => m.value === model)?.label || model} ({model})</span>
                                 <svg 
@@ -370,7 +308,7 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
                             </button>
                             
                             {isModelDropdownOpen && (
-                                <div className="absolute bottom-full left-0 right-0 mb-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-20 max-h-48 overflow-y-auto custom-scrollbar">
+                                <div className="absolute bottom-full left-0 right-0 mb-1 bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-lg shadow-xl overflow-hidden z-20 max-h-48 overflow-y-auto custom-scrollbar">
                                     {SUNO_MODEL_MAPPINGS.map((m) => (
                                         <button
                                             key={m.value}
@@ -378,7 +316,7 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
                                             className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between
                                             ${model === m.value 
                                                 ? 'bg-pink-600/20 text-pink-300' 
-                                                : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'}`}
+                                                : 'text-slate-300 hover:bg-[var(--app-tab-hover)]/50 hover:text-white'}`}
                                         >
                                             <span>{m.label}</span>
                                             {model === m.value && (
@@ -400,7 +338,7 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
                 <div className="space-y-8">
                     
                     {/* 1. Prompt Version */}
-                    <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
                          <div>
                              <h3 className="text-base font-bold text-white">System Prompt Version</h3>
                              <p className="text-xs text-slate-400">Select which instruction set the AI uses.</p>
@@ -410,7 +348,7 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
                                  <button
                                     key={v}
                                     onClick={() => handleVersionChange(v)}
-                                    className={`px-4 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${promptSettings.version === v ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                                    className={`px-4 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${promptSettings.version === v ? 'bg-[var(--app-accent)] text-white shadow' : 'text-slate-400 hover:text-white'}`}
                                  >
                                      {v === 'v2' ? 'V2 (Lyrical)' : v === 'v1' ? 'V1 (Classic)' : v === 'v3' ? 'V3 (Detailed)' : 'Custom'}
                                  </button>
@@ -425,7 +363,7 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
                                 {/* Library Configuration */}
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
-                                        <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider">Suno Library</h3>
+                                        <h3 className="text-sm font-bold text-[var(--app-accent)] uppercase tracking-wider">Suno Library</h3>
                                         <button onClick={handleResetDefaults} className="text-xs text-red-400 hover:text-red-300 hover:underline">Reset Defaults</button>
                                     </div>
                                     
@@ -480,7 +418,7 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
                         <textarea 
                             value={promptSettings.customSystemPrompt}
                             onChange={(e) => setPromptSettings(prev => ({...prev, customSystemPrompt: e.target.value, version: 'custom'}))}
-                            className="w-full h-[400px] bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-300 focus:ring-1 focus:ring-purple-500 outline-none custom-scrollbar leading-relaxed"
+                            className="w-full h-[400px] bg-slate-950 border border-[var(--app-panel-border)] rounded-xl p-4 font-mono text-xs text-slate-300 focus:ring-1 focus:ring-[var(--app-accent)]/50 outline-none custom-scrollbar leading-relaxed"
                         />
                     </div>
                 </div>
@@ -488,8 +426,8 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex-shrink-0 flex justify-end gap-3 p-4 border-t border-slate-800 bg-slate-900/80 rounded-b-2xl">
-            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+        <div className={`flex-shrink-0 flex justify-end gap-3 p-4 border-t border-[var(--app-panel-border)] bg-[var(--app-panel)] ${isEmbedded ? 'rounded-b-2xl mt-auto' : 'rounded-b-2xl'}`}>
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-[var(--app-panel)] rounded-lg transition-colors">
               Cancel
             </button>
             <button onClick={handleSave} className="px-6 py-2 text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 rounded-lg shadow-lg hover:shadow-pink-500/25 transition-all">
@@ -497,6 +435,15 @@ const SunoSettingsModal: React.FC<SunoSettingsModalProps> = ({
             </button>
         </div>
       </div>
+  );
+
+  if (isEmbedded) {
+    return content;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      {content}
     </div>
   );
 };
@@ -507,7 +454,7 @@ const ConfigArea = ({ label, value, onChange }: { label: string, value: string, 
         <textarea 
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full h-16 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-300 focus:ring-1 focus:ring-purple-500/50 outline-none custom-scrollbar resize-none"
+            className="w-full h-16 bg-slate-900 border border-[var(--app-panel-border)] rounded-lg p-2 text-xs text-slate-300 focus:ring-1 focus:ring-[var(--app-accent)]/50 outline-none custom-scrollbar resize-none"
         />
     </div>
 );

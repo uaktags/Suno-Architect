@@ -61,29 +61,25 @@ const AuthGate: React.FC = () => {
 
   if (user || devBypass) {
     return (
-      <div className="relative">
-        {!devBypass && user && (
-          <button
-            onClick={async () => {
-              try {
-                await logout();
-              } finally {
-                setUser(null);
+      <App
+        onSignOut={
+          !devBypass && user
+            ? async () => {
+                try {
+                  await logout();
+                } finally {
+                  setUser(null);
+                }
               }
-            }}
-            className="fixed top-3 right-3 z-[100] text-xs bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg"
-          >
-            Sign Out
-          </button>
-        )}
-        <App />
-      </div>
+            : undefined
+        }
+      />
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-6">
+      <div className="w-full max-w-md bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-2xl p-6">
         <h1 className="text-xl font-bold text-white mb-1">Suno Architect Access</h1>
         <p className="text-xs text-slate-400 mb-5">
           Sign in to use protected generation and proxy endpoints.
@@ -97,7 +93,7 @@ const AuthGate: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+              className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-sm text-white"
             />
           </div>
           <div>
@@ -108,14 +104,14 @@ const AuthGate: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               minLength={8}
               required
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+              className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-sm text-white"
             />
           </div>
           {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded p-2">{error}</div>}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-60 text-white text-sm font-bold py-2.5 rounded-lg"
+            className="w-full bg-[var(--app-accent)] hover:bg-[var(--app-accent)] disabled:opacity-60 text-white text-sm font-bold py-2.5 rounded-lg"
           >
             {submitting ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
           </button>

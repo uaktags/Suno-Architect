@@ -4,14 +4,14 @@ import InputSection from './components/InputSection/InputSection';
 import OutputSection from './components/OutputSection/OutputSection';
 import { Header } from './components/Header';
 import { generateSunoPromptWithProvider } from './services/geminiService';
-import { GenerationState, SunoClip, ParsedSunoOutput, PromptSettings, ViewMode, FileContext, AIProviderConfig, GenerationOptions } from './types';
-import { DEFAULT_SUNO_LIBRARY, DEFAULT_LYRICAL_CONSTRAINTS, buildKnowledgeBase, GET_PROMPT_V1 } from './constants';
+import { GenerationState, SunoClip, ParsedSunoOutput, PromptSettings, ViewMode, FileContext, AIProviderConfig, GenerationOptions, AppTheme, AppLayout } from './types';
+import { DEFAULT_SUNO_LIBRARY, DEFAULT_LYRICAL_CONSTRAINTS, buildKnowledgeBase, GET_PROMPT_V1, APP_THEMES, APP_LAYOUTS } from './constants';
 import Footer from './components/Footer';
-import SunoSettingsModal from './components/SunoSettingsModal';
-import { ProviderSettingsModal } from './components/ProviderSettingsModal';
+import { SettingsModal } from './components/SettingsModal';
 import { getSunoCredits, updateSunoMetadata, getSunoFeed, getSunoFeedOfflineAware, getSunoClip, getSunoPlaylist } from './services/sunoApi';
 import { downloadAccountCache } from './services/offlineSyncService';
 import HistorySection from './components/HistorySection/HistorySection';
+import ActivityHistorySection from './components/ActivityHistorySection/ActivityHistorySection';
 import VisualizerSection from './components/VisualizerSection/VisualizerSection';
 import AlbumsSection from './components/AlbumsSection/AlbumsSection';
 import AlbumBuilderSection from './components/AlbumBuilderSection/AlbumBuilderSection';
@@ -27,6 +27,91 @@ import {
   setApiKeyStorageMode,
 } from './utils/apiKeyStorage';
 import { deleteServerApiKey, getServerApiKey, setServerApiKey } from './services/keyVaultService';
+
+
+const VIEW_TABS: { key: ViewMode; label: string; icon?: React.ReactNode }[] = [
+  {
+    key: 'generator',
+    label: 'Generator',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+        <path d="M12 2v20" />
+        <path d="m17 5-5-3-5 3" />
+        <path d="m17 19-5 3-5-3" />
+        <path d="M2 12h20" />
+      </svg>
+    ),
+  },
+  {
+    key: 'activity-history',
+    label: 'History',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+        <path d="M3 3v5h5" />
+        <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
+        <path d="M12 7v5l3 2" />
+      </svg>
+    ),
+  },
+  {
+    key: 'history',
+    label: 'Library',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+        <path d="M3 6a2 2 0 0 1 2-2h3v16H5a2 2 0 0 0-2 2z" />
+        <path d="M21 6a2 2 0 0 0-2-2h-3v16h3a2 2 0 0 1 2 2z" />
+        <path d="M8 4h8v16H8z" />
+      </svg>
+    ),
+  },
+  {
+    key: 'albums',
+    label: 'Albums',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 9v3l2 1" />
+      </svg>
+    ),
+  },
+  {
+    key: 'album-builder',
+    label: 'Album Builder',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+        <path d="M14 3h7v7" />
+        <path d="M10 14 21 3" />
+        <path d="M21 14v7h-7" />
+        <path d="M3 10V3h7" />
+        <path d="M3 21v-7h7" />
+      </svg>
+    ),
+  },
+  {
+    key: 'visualizer',
+    label: 'Visualizer',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+        <path d="M23 7l-7 5 7 5V7z" />
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+      </svg>
+    ),
+  },
+  {
+    key: 'web-audio-master',
+    label: 'Web-Audio-Master',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+        <path d="M4 12h2" />
+        <path d="M8 8v8" />
+        <path d="M12 5v14" />
+        <path d="M16 8v8" />
+        <path d="M20 10v4" />
+      </svg>
+    ),
+  },
+];
 
 // Helper to map API response to SunoClip
 const mapSunoClip = (clip: any): SunoClip => {
@@ -70,7 +155,11 @@ const mapSunoClip = (clip: any): SunoClip => {
     };
 };
 
-const App: React.FC = () => {
+interface AppProps {
+  onSignOut?: () => void;
+}
+
+const App: React.FC<AppProps> = ({ onSignOut }) => {
   const [state, setState] = useState<GenerationState>({
     isLoading: false,
     error: null,
@@ -78,6 +167,14 @@ const App: React.FC = () => {
   });
 
   const [view, setView] = useState<ViewMode>('generator');
+  const [appTheme, setAppTheme] = useState<AppTheme>(() => {
+    const saved = localStorage.getItem('app_theme') as AppTheme | null;
+    return saved && APP_THEMES.some(theme => theme.id === saved) ? saved : 'midnight';
+  });
+  const [appLayout, setAppLayout] = useState<AppLayout>(() => {
+    const saved = localStorage.getItem('app_layout') as AppLayout | null;
+    return saved && APP_LAYOUTS.some(layout => layout.id === saved) ? saved : 'topbar';
+  });
   
   const [history, setHistory] = useState<SunoClip[]>(() => {
     try {
@@ -89,7 +186,6 @@ const App: React.FC = () => {
     }
   });
   
-  const [customApiKey, setCustomApiKey] = useState('');
   const [isKeyValid, setIsKeyValid] = useState(false);
   
   const [providerConfig, setProviderConfig] = useState<AIProviderConfig>(() => {
@@ -122,7 +218,7 @@ const App: React.FC = () => {
     };
   });
 
-  const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [keyStorageModes, setKeyStorageModes] = useState<Record<'gemini' | 'openrouter' | 'openapi', ApiKeyStorageMode>>(() => ({
     gemini: getApiKeyStorageMode('gemini'),
     openrouter: getApiKeyStorageMode('openrouter'),
@@ -141,7 +237,6 @@ const App: React.FC = () => {
       }
   };
   
-  const [isSunoModalOpen, setIsSunoModalOpen] = useState(false);
   const [sunoCookie, setSunoCookie] = useState('');
   const [sunoModel, setSunoModel] = useState('chirp-bluejay');
   const [sunoCredits, setSunoCredits] = useState<number | null>(null);
@@ -193,7 +288,24 @@ const App: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('local_library_mode', useCachedData ? '1' : '0');
+    if (sunoCookie && historyFetchedRef.current) {
+        handleFetchHistory(50);
+    }
   }, [useCachedData]);
+
+  useEffect(() => {
+    localStorage.setItem('app_theme', appTheme);
+    const root = document.documentElement;
+    if (appTheme === 'midnight') {
+      root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-theme', appTheme);
+    }
+  }, [appTheme]);
+
+  useEffect(() => {
+    localStorage.setItem('app_layout', appLayout);
+  }, [appLayout]);
 
   useEffect(() => {
     localStorage.setItem('suno_history', JSON.stringify(history));
@@ -458,7 +570,6 @@ const App: React.FC = () => {
     try {
       const config: AIProviderConfig = {
         ...providerConfig,
-        apiKey: customApiKey ? customApiKey : providerConfig.apiKey,
         model: providerConfig.model || getDefaultModelForProvider(providerConfig.type),
       };
 
@@ -623,11 +734,18 @@ const App: React.FC = () => {
 
   const renderContent = () => {
       switch(view) {
+          case 'activity-history':
+              return (
+                <ActivityHistorySection 
+                  history={history}
+                  setView={setView}
+                />
+              );
           case 'history':
               return (
-                <HistorySection 
-                    history={history} 
-                    onUpdateClip={handleUpdateClip} 
+                <HistorySection
+                    history={history}
+                    onUpdateClip={handleUpdateClip}
                     onAddClip={handleAddClip}
                     sunoCookie={sunoCookie}
                     onFetchHistory={handleFetchHistory}
@@ -674,7 +792,7 @@ const App: React.FC = () => {
                             apiKeyValid={isKeyValid}
                             providerConfig={providerConfig}
                             onProviderConfigChange={setProviderConfig}
-                            onOpenProviderSettings={() => setIsProviderModalOpen(true)}
+                            onOpenProviderSettings={() => setIsSettingsModalOpen(true)}
                         />
                         {state.error && (
                             <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-200 text-sm">
@@ -693,10 +811,10 @@ const App: React.FC = () => {
                             onUpdateTrack={handleUpdateResult}
                         />
                         ) : (
-                        <div className="h-full flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/20 text-slate-600 min-h-[400px]">
+                        <div className="h-full flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-[var(--app-panel-border)] rounded-2xl bg-[var(--app-panel)] text-slate-600 min-h-[400px]">
                             {!state.isLoading && (
                             <>
-                                <div className="w-16 h-16 rounded-full bg-slate-800 mb-4 flex items-center justify-center">
+                                <div className="w-16 h-16 rounded-full bg-[var(--app-panel)] mb-4 flex items-center justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 opacity-50">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
                                 </svg>
@@ -707,9 +825,9 @@ const App: React.FC = () => {
                             )}
                             {state.isLoading && (
                             <div className="flex flex-col items-center animate-pulse">
-                                <div className="h-4 w-3/4 bg-slate-800 rounded mb-3"></div>
-                                <div className="h-4 w-1/2 bg-slate-800 rounded mb-3"></div>
-                                <div className="h-32 w-full bg-slate-800 rounded"></div>
+                                <div className="h-4 w-3/4 bg-[var(--app-panel)] rounded mb-3"></div>
+                                <div className="h-4 w-1/2 bg-[var(--app-panel)] rounded mb-3"></div>
+                                <div className="h-32 w-full bg-[var(--app-panel)] rounded"></div>
                             </div>
                             )}
                         </div>
@@ -721,35 +839,25 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0f172a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-[#0f172a] to-black text-slate-200 font-sans selection:bg-purple-500/30">
+    <div className="theme-shell min-h-screen flex flex-col text-slate-200 font-sans selection:bg-[var(--app-accent)]/30">
       
-       <Header 
-        onKeyUpdate={setCustomApiKey} 
-        onValidationChange={setIsKeyValid}
-        onOpenSunoSettings={() => setIsSunoModalOpen(true)}
-        onOpenProviderSettings={() => setIsProviderModalOpen(true)}
+      <Header 
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        onSignOut={onSignOut}
         sunoCredits={sunoCredits}
-        sunoModel={sunoModel}
-        onModelChange={handleModelChange}
-        geminiModel={geminiModel}
-        onGeminiModelChange={handleGeminiModelChange}
         providerConfig={providerConfig}
       />
 
-      <SunoSettingsModal 
-        isOpen={isSunoModalOpen}
-        onClose={() => setIsSunoModalOpen(false)}
-        onSave={handleSaveSunoConfig}
-        initialCookie={sunoCookie}
-        initialModel={sunoModel}
-        initialPromptSettings={promptSettings}
-        currentCredits={sunoCredits}
-      />
-
-      <ProviderSettingsModal
-        isOpen={isProviderModalOpen}
-        onClose={() => setIsProviderModalOpen(false)}
-        onSave={async (config, storageMode) => {
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        appTheme={appTheme}
+        setAppTheme={setAppTheme}
+        appLayout={appLayout}
+        setAppLayout={setAppLayout}
+        providerConfig={providerConfig}
+        initialStorageMode={keyStorageModes[providerConfig.type] || 'client'}
+        onSaveProvider={async (config, storageMode) => {
           const trimmedApiKey = config.apiKey?.trim() || undefined;
           const providerType = config.type;
 
@@ -800,87 +908,141 @@ const App: React.FC = () => {
             setGeminiModel(config.model);
           }
         }}
-        initialConfig={providerConfig}
-        initialStorageMode={keyStorageModes[providerConfig.type] || 'client'}
+        sunoCookie={sunoCookie}
+        sunoModel={sunoModel}
+        promptSettings={promptSettings}
+        sunoCredits={sunoCredits}
+        onSaveSuno={handleSaveSunoConfig}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full flex justify-center">
-          <div className="bg-slate-800/50 p-1 rounded-xl flex space-x-1 border border-slate-700/50 backdrop-blur-sm overflow-x-auto">
-             <button
-                onClick={() => setView('generator')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
-                    view === 'generator' 
-                    ? 'bg-slate-700 text-white shadow-lg' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-             >
-                Generator
-             </button>
-             <button
-                onClick={() => setView('history')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
-                    view === 'history' 
-                    ? 'bg-slate-700 text-white shadow-lg' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-             >
-                <span>History</span>
-                {history.length > 0 && (
-                    <span className="bg-purple-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                        {history.length}
-                    </span>
-                )}
-             </button>
-             <button
-                onClick={() => setView('albums')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
-                    view === 'albums'
-                    ? 'bg-slate-700 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-             >
-                Albums
-             </button>
-             <button
-                onClick={() => setView('album-builder')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                    view === 'album-builder'
-                    ? 'bg-slate-700 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-             >
-                Album Builder
-             </button>
-             <button
-                onClick={() => setView('visualizer')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
-                    view === 'visualizer' 
-                    ? 'bg-slate-700 text-white shadow-lg' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-             >
-                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                    <path d="M23 7l-7 5 7 5V7z" />
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                </svg>
-                <span>Visualizer</span>
-             </button>
-             <button
-                onClick={() => setView('web-audio-master')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
-                    view === 'web-audio-master'
-                    ? 'bg-slate-700 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-             >
-                <span>Web-Audio-Master</span>
-             </button>
+      {appLayout === 'topbar' && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full">
+          <div className="rounded-2xl border p-3 sm:p-4 backdrop-blur-sm bg-[var(--app-panel)] border-[var(--app-panel-border)]">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-center">
+              <div className="flex flex-wrap items-center gap-2">
+                {VIEW_TABS.map((tab) => {
+                  const isActive = view === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setView(tab.key)}
+                      className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                        isActive ? 'text-white shadow-lg' : 'text-slate-300 hover:text-white'
+                      }`}
+                      style={{
+                        backgroundColor: isActive ? 'var(--app-tab-active)' : 'transparent',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) e.currentTarget.style.backgroundColor = 'var(--app-tab-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      {tab.icon}
+                      <span>{tab.label}</span>
+                      {tab.key === 'history' && history.length > 0 && (
+                        <span className="text-white text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--app-accent)' }}>
+                          {history.length}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-      </div>
+        </div>
+      )}
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {renderContent()}
-      </main>
+      {appLayout === 'sidebar' && (
+        <div className="flex flex-1 overflow-hidden">
+          <aside className="w-64 flex-shrink-0 border-r flex flex-col bg-[var(--app-panel)] border-[var(--app-panel-border)]">
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+              {VIEW_TABS.map((tab) => {
+                const isActive = view === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setView(tab.key)}
+                    className={`w-full px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center gap-3 ${
+                      isActive ? 'text-white shadow-lg' : 'text-slate-300 hover:text-white'
+                    }`}
+                    style={{
+                      backgroundColor: isActive ? 'var(--app-tab-active)' : 'transparent',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = 'var(--app-tab-hover)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                    {tab.key === 'history' && history.length > 0 && (
+                      <span className="ml-auto text-white text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--app-accent)' }}>
+                        {history.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+          <main className="flex-1 overflow-auto p-8">
+            {renderContent()}
+          </main>
+        </div>
+      )}
+
+      {appLayout === 'studio' && (
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex items-center justify-center px-6 py-3 border-b bg-[var(--app-panel)] border-[var(--app-panel-border)]">
+            <div className="flex items-center gap-1">
+              {VIEW_TABS.map((tab) => {
+                const isActive = view === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setView(tab.key)}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
+                      isActive ? 'text-white shadow-lg' : 'text-slate-300 hover:text-white'
+                    }`}
+                    style={{
+                      backgroundColor: isActive ? 'var(--app-tab-active)' : 'transparent',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = 'var(--app-tab-hover)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                    title={tab.label}
+                  >
+                    {tab.icon}
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    {tab.key === 'history' && history.length > 0 && (
+                      <span className="text-white text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--app-accent)' }}>
+                        {history.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <main className="flex-1 overflow-auto p-6">
+            {renderContent()}
+          </main>
+        </div>
+      )}
+
+      {appLayout === 'topbar' && (
+        <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+          {renderContent()}
+        </main>
+      )}
       <Footer git="https://github.com/xiliourt/Suno-Architect/" />
     </div>
   );

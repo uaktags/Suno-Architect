@@ -8,13 +8,66 @@
   --color-slate-200: #e2e8f0;
 }
 
+:root {
+  --app-bg-start: #1e293b;
+  --app-bg-mid: #0f172a;
+  --app-bg-end: #020617;
+  --app-panel: rgba(30, 41, 59, 0.55);
+  --app-panel-border: rgba(148, 163, 184, 0.22);
+  --app-tab-active: #334155;
+  --app-tab-hover: rgba(51, 65, 85, 0.55);
+  --app-accent: #a855f7;
+}
+
+:root[data-theme="neon-synth"] {
+  --app-bg-start: #1d1133;
+  --app-bg-mid: #120a24;
+  --app-bg-end: #07040f;
+  --app-panel: rgba(56, 26, 110, 0.45);
+  --app-panel-border: rgba(192, 132, 252, 0.32);
+  --app-tab-active: #4c1d95;
+  --app-tab-hover: rgba(76, 29, 149, 0.45);
+  --app-accent: #c084fc;
+}
+
+:root[data-theme="dawn-studio"] {
+  --app-bg-start: #172554;
+  --app-bg-mid: #0a192f;
+  --app-bg-end: #020617;
+  --app-panel: rgba(30, 58, 138, 0.42);
+  --app-panel-border: rgba(125, 211, 252, 0.3);
+  --app-tab-active: #1d4ed8;
+  --app-tab-hover: rgba(29, 78, 216, 0.4);
+  --app-accent: #38bdf8;
+}
+
+:root[data-theme="forest-night"] {
+  --app-bg-start: #0b2f22;
+  --app-bg-mid: #062018;
+  --app-bg-end: #020a08;
+  --app-panel: rgba(6, 78, 59, 0.42);
+  --app-panel-border: rgba(52, 211, 153, 0.3);
+  --app-tab-active: #065f46;
+  --app-tab-hover: rgba(6, 95, 70, 0.4);
+  --app-accent: #34d399;
+}
+
 /* Base Styles */
 @layer base {
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
     background-color: var(--color-slate-900);
     color: var(--color-slate-200);
   }
+}
+
+.theme-shell {
+  background-image: radial-gradient(
+    ellipse at top,
+    var(--app-bg-start),
+    var(--app-bg-mid),
+    var(--app-bg-end)
+  );
 }
 
 /* Custom Scrollbar Styles */

@@ -9,6 +9,7 @@ interface ProviderSettingsModalProps {
   onSave: (config: AIProviderConfig, storageMode: ApiKeyStorageMode) => Promise<void> | void;
   initialConfig: AIProviderConfig;
   initialStorageMode: ApiKeyStorageMode;
+  isEmbedded?: boolean;
 }
 
 export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
@@ -17,6 +18,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
   onSave,
   initialConfig,
   initialStorageMode,
+  isEmbedded = false,
 }) => {
   const [config, setConfig] = useState<AIProviderConfig>(initialConfig);
   const [storageMode, setStorageMode] = useState<ApiKeyStorageMode>(initialStorageMode);
@@ -141,9 +143,9 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full border border-slate-700 shadow-2xl max-h-[90vh] overflow-y-auto">
+  const content = (
+    <div className={`${isEmbedded ? 'h-full flex flex-col' : 'bg-[var(--app-panel)] rounded-xl p-6 max-w-2xl w-full border border-[var(--app-panel-border)] shadow-2xl max-h-[90vh] overflow-y-auto'}`}>
+      {!isEmbedded && (
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">AI Provider Settings</h2>
           <button
@@ -156,11 +158,14 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
             </svg>
           </button>
         </div>
+      )}
+      
+      {isEmbedded && <h3 className="text-lg font-bold text-white mb-6 p-6 pb-0">AI Provider Settings</h3>}
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-slate-400 mb-2">
-              Provider Type
+      <div className={`space-y-4 ${isEmbedded ? 'p-6 flex-grow overflow-y-auto custom-scrollbar' : ''}`}>
+        <div>
+          <label className="block text-sm font-semibold text-slate-400 mb-2">
+            Provider Type
             </label>
             <select
               value={config.type}
@@ -177,7 +182,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                 setAvailableModels([]);
                 setModelFetchError(null);
               }}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]/50"
             >
               <option value="gemini">Google Gemini</option>
               <option value="openrouter">OpenRouter</option>
@@ -193,7 +198,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
               type="password"
               value={config.apiKey || ''}
               onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]/50"
               placeholder="Enter API key"
             />
           </div>
@@ -208,8 +213,8 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                 onClick={() => setStorageMode('client')}
                 className={`px-3 py-2 rounded-lg text-xs border transition-colors ${
                   storageMode === 'client'
-                    ? 'bg-purple-600/20 border-purple-500 text-purple-200'
-                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'
+                    ? 'bg-[var(--app-accent)]/20 border-purple-500 text-purple-200'
+                    : 'bg-slate-900 border-[var(--app-panel-border)] text-slate-300 hover:border-slate-600'
                 }`}
               >
                 Client only
@@ -219,8 +224,8 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                 onClick={() => setStorageMode('server')}
                 className={`px-3 py-2 rounded-lg text-xs border transition-colors ${
                   storageMode === 'server'
-                    ? 'bg-purple-600/20 border-purple-500 text-purple-200'
-                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'
+                    ? 'bg-[var(--app-accent)]/20 border-purple-500 text-purple-200'
+                    : 'bg-slate-900 border-[var(--app-panel-border)] text-slate-300 hover:border-slate-600'
                 }`}
               >
                 Server only
@@ -230,8 +235,8 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                 onClick={() => setStorageMode('both')}
                 className={`px-3 py-2 rounded-lg text-xs border transition-colors ${
                   storageMode === 'both'
-                    ? 'bg-purple-600/20 border-purple-500 text-purple-200'
-                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'
+                    ? 'bg-[var(--app-accent)]/20 border-purple-500 text-purple-200'
+                    : 'bg-slate-900 border-[var(--app-panel-border)] text-slate-300 hover:border-slate-600'
                 }`}
               >
                 Client + server
@@ -263,7 +268,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                       setConfig({ ...config, baseUrl: value });
                     }
                   }}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]/50"
                   placeholder="https://api.example.com/v1"
                 />
                 <p className="text-xs text-slate-500 mt-1">
@@ -279,7 +284,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                   type="text"
                   value={config.authHeader || 'Authorization'}
                   onChange={(e) => setConfig({ ...config, authHeader: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]/50"
                   placeholder="Authorization or x-litellm-api-key"
                 />
                 <p className="text-xs text-slate-500 mt-1">
@@ -295,7 +300,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                   type="text"
                   value={config.authPrefix || 'Bearer '}
                   onChange={(e) => setConfig({ ...config, authPrefix: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]/50"
                   placeholder="Bearer "
                 />
                 <p className="text-xs text-slate-500 mt-1">
@@ -333,7 +338,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                     e.stopPropagation();
                     setIsModelDropdownOpen(!isModelDropdownOpen);
                   }}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 flex items-center justify-between text-left"
+                  className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]/50 flex items-center justify-between text-left"
                 >
                   <span className="truncate">
                     {config.model || 'Select a model...'}
@@ -353,8 +358,8 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                 </button>
 
                 {isModelDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 flex flex-col max-h-60">
-                    <div className="p-2 border-b border-slate-700">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-lg shadow-xl z-50 flex flex-col max-h-60">
+                    <div className="p-2 border-b border-[var(--app-panel-border)]">
                       <input
                         ref={modelSearchInputRef}
                         type="text"
@@ -382,7 +387,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                           e.stopPropagation();
                         }}
                         placeholder="Search models..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                        className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]/50"
                       />
                     </div>
                     
@@ -397,15 +402,15 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                               e.stopPropagation();
                               handleModelSelect(model);
                             }}
-                            className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between hover:bg-slate-700/50
+                            className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between hover:bg-[var(--app-tab-hover)]/50
                               ${config.model === model
-                                ? 'bg-purple-600/20 text-purple-300'
+                                ? 'bg-[var(--app-accent)]/20 text-purple-300'
                                 : 'text-slate-300 hover:text-white'
                               }`}
                           >
                             <span className="truncate">{model}</span>
                             {config.model === model && (
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-purple-400 flex-shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-[var(--app-accent)] flex-shrink-0">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
                             )}
@@ -425,7 +430,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                 type="text"
                 value={config.model || ''}
                 onChange={(e) => setConfig({ ...config, model: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]/50"
                 placeholder={config.type === 'gemini' ? 'gemini-3-flash-preview' : 'Enter model name'}
               />
             )}
@@ -442,7 +447,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-700">
+        <div className={`flex gap-3 justify-end mt-6 pt-4 border-t border-[var(--app-panel-border)] ${isEmbedded ? 'p-6 pb-6 pt-4' : ''}`}>
           <button
             type="button"
             onClick={(e) => {
@@ -463,12 +468,21 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
               handleSave();
             }}
             disabled={isSaving}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-colors disabled:opacity-60"
+            className="px-4 py-2 bg-[var(--app-accent)] text-white rounded-lg hover:bg-[var(--app-accent)] transition-colors disabled:opacity-60"
           >
             {isSaving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
+  );
+  
+  if (isEmbedded) {
+    return content;
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      {content}
     </div>
   );
 };

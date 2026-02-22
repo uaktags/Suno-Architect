@@ -43,6 +43,17 @@ export interface OfflinePlaylist {
   raw: any;
 }
 
+export interface OfflineRenderHistory {
+  id: string; // UUID
+  clipId: string;
+  clipTitle: string;
+  createdAt: number; // timestamp
+  settings: any; // The visualizer config snapshot used
+  mediaBlob: Blob; // The actual video file
+  mimeType: string;
+  fileSize: number;
+}
+
 interface SunoOfflineDB extends DBSchema {
   tracks: {
     key: string;
@@ -66,6 +77,13 @@ interface SunoOfflineDB extends DBSchema {
       byUpdatedAt: number;
     };
   };
+  visualizer_renders: {
+    key: string;
+    value: OfflineRenderHistory;
+    indexes: {
+      byCreatedAt: number;
+    };
+  };
   syncMeta: {
     key: string;
     value: {
@@ -77,14 +95,14 @@ interface SunoOfflineDB extends DBSchema {
 }
 
 const DB_NAME = 'suno-architect-offline';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise: ReturnType<typeof openDB<SunoOfflineDB>> | null = null;
 
 export const getOfflineDb = () => {
   if (!dbPromise) {
     dbPromise = openDB<SunoOfflineDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion) {
         if (!db.objectStoreNames.contains('tracks')) {
           const trackStore = db.createObjectStore('tracks', { keyPath: 'id' });
           trackStore.createIndex('byUpdatedAt', 'updatedAt');
@@ -99,6 +117,11 @@ export const getOfflineDb = () => {
         if (!db.objectStoreNames.contains('playlists')) {
           const playlistStore = db.createObjectStore('playlists', { keyPath: 'id' });
           playlistStore.createIndex('byUpdatedAt', 'updatedAt');
+        }
+
+        if (oldVersion < 3 && !db.objectStoreNames.contains('visualizer_renders')) {
+          const renderStore = db.createObjectStore('visualizer_renders', { keyPath: 'id' });
+          renderStore.createIndex('byCreatedAt', 'createdAt');
         }
 
         if (!db.objectStoreNames.contains('syncMeta')) {
@@ -197,4 +220,28 @@ export const getSyncMeta = async <T = any>(key: string): Promise<T | undefined> 
   const db = await getOfflineDb();
   const record = await db.get('syncMeta', key);
   return record?.value as T | undefined;
+};
+
+export const saveVisualizerRender = async (renderInfo: OfflineRenderHistory) => {
+  const db = await getOfflineDb();
+  await db.put('visualizer_renders', renderInfo);
+};
+
+export const listVisualizerRenders = async (): Promise<OfflineRenderHistory[]> => {
+  const db = await getOfflineDb();
+  const tx = db.transaction('visualizer_renders', 'readonly');
+  const index = tx.store.index('byCreatedAt');
+  const results: OfflineRenderHistory[] = [];
+  let cursor = await index.openCursor(null, 'prev'); // Most recent first
+  while (cursor) {
+    results.push(cursor.value);
+    cursor = await cursor.continue();
+  }
+  await tx.done;
+  return results;
+};
+
+export const deleteVisualizerRender = async (id: string) => {
+  const db = await getOfflineDb();
+  await db.delete('visualizer_renders', id);
 };
