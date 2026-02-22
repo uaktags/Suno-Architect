@@ -1,6 +1,6 @@
 
 import { ParsedSunoOutput, LyricAlignmentResponse } from "../types";
-import { listTracksByUpdatedAtDesc } from './offlineDb';
+import { listAllTracks, listTracksByUpdatedAtDesc } from './offlineDb';
 
 export const extractSunoPlaylistId = (input: string): string | null => {
     const trimmed = (input || "").trim();
@@ -162,19 +162,67 @@ export const getSunoFeed = async (
     }
 };
 
+const extractFeedClips = (feed: any): any[] => (Array.isArray(feed?.clips) ? feed.clips : []);
+
+const extractNextFeedCursor = (feed: any): string | null => {
+    const candidate =
+        feed?.next_cursor ??
+        feed?.nextCursor ??
+        feed?.cursor ??
+        feed?.pagination?.next_cursor ??
+        feed?.pagination?.nextCursor ??
+        null;
+    return typeof candidate === 'string' && candidate.trim() ? candidate : null;
+};
+
+export const getSunoFeedAll = async (
+    cookie: string,
+    pageSize: number = 100,
+    searchText?: string,
+    options?: { maxPages?: number; maxClips?: number }
+): Promise<any> => {
+    const maxPages = Math.max(1, options?.maxPages ?? 30);
+    const maxClips = Math.max(1, options?.maxClips ?? 5000);
+    const safePageSize = Math.max(1, Math.min(pageSize, 200));
+
+    const allClips: any[] = [];
+    let cursor: string | null = null;
+    let page = 0;
+    const seenCursors = new Set<string>();
+
+    while (page < maxPages && allClips.length < maxClips) {
+        const feed = await getSunoFeed(cookie, safePageSize, cursor, searchText);
+        const clips = extractFeedClips(feed);
+        allClips.push(...clips);
+        page += 1;
+
+        const nextCursor = extractNextFeedCursor(feed);
+        if (!nextCursor || nextCursor === cursor || seenCursors.has(nextCursor) || clips.length === 0) {
+            break;
+        }
+        seenCursors.add(nextCursor);
+        cursor = nextCursor;
+    }
+
+    return { clips: allClips };
+};
+
 export const getSunoFeedOfflineAware = async (
     cookie: string,
-    limit: number = 20,
+    limit: number | 'all' = 20,
     cursor: string | null = null,
     searchText?: string,
     options?: { useCachedData?: boolean }
 ): Promise<any> => {
     const useCachedData = !!options?.useCachedData;
     if (!useCachedData) {
+        if (limit === 'all') {
+            return getSunoFeedAll(cookie, 100, searchText);
+        }
         return getSunoFeed(cookie, limit, cursor, searchText);
     }
 
-    const tracks = await listTracksByUpdatedAtDesc(limit);
+    const tracks = limit === 'all' ? await listAllTracks() : await listTracksByUpdatedAtDesc(limit);
     const filtered = searchText?.trim()
         ? tracks.filter((t) => {
             const q = searchText.toLowerCase();

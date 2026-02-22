@@ -70,6 +70,61 @@
   );
 }
 
+.ui-console-panel {
+  border: 2px solid var(--app-panel-border);
+  background: rgba(0, 0, 0, 0.9);
+  padding: 0.75rem;
+}
+
+.ui-console-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgb(103 232 249 / 0.9);
+}
+
+.ui-console-input {
+  width: 100%;
+  border: 1px solid var(--app-panel-border);
+  background: rgb(2 6 23);
+  color: rgb(226 232 240);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  padding: 0.65rem 0.75rem;
+  outline: none;
+}
+
+.ui-console-input::placeholder {
+  color: rgb(100 116 139);
+}
+
+.ui-console-input:focus {
+  box-shadow: 0 0 0 2px rgb(34 211 238 / 0.45);
+}
+
+.ui-console-button {
+  height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid rgb(103 232 249 / 0.8);
+  color: rgb(207 250 254);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+.ui-console-button:hover:not(:disabled) {
+  background: rgb(34 211 238 / 0.08);
+}
+
+.ui-console-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Custom Scrollbar Styles */
 .custom-scrollbar::-webkit-scrollbar,
 textarea::-webkit-scrollbar {

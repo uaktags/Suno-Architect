@@ -1,4 +1,4 @@
-import { getLyricAlignment, getSunoClip, getSunoFeed, getSunoPlaylist } from './sunoApi';
+import { getLyricAlignment, getSunoClip, getSunoFeedAll, getSunoPlaylist } from './sunoApi';
 import { generateLrc, generateSrt, groupWordsByTiming, stripMetaTags } from '../utils/lyrics';
 import {
   OfflinePlaylist,
@@ -174,7 +174,7 @@ export async function downloadAccountCache(
   onProgress?: (p: SyncProgress) => void
 ): Promise<SyncResult> {
   onProgress?.({ phase: 'fetching', completed: 0, total: 1, message: 'Fetching remote account metadata…' });
-  const feed = await getSunoFeed(cookie, 200);
+  const feed = await getSunoFeedAll(cookie, 100);
   const remoteClips = Array.isArray(feed?.clips) ? feed.clips : [];
 
   const remotePlaylists: OfflinePlaylist[] = [];
