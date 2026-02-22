@@ -893,7 +893,7 @@ async function handleAlbumReorderSongs(request: Request, env: Env, albumId: numb
   const songIds = Array.isArray(body.songIds)
     ? body.songIds.map((s: unknown) => String(s || "").trim()).filter(Boolean)
     : [];
-  const uniqueSongIds = Array.from(new Set(songIds));
+  const uniqueSongIds = Array.from(new Set(songIds)) as string[];
 
   const db = getDb(env);
   if (db) {
