@@ -167,10 +167,10 @@ export const getSunoFeedOfflineAware = async (
     limit: number = 20,
     cursor: string | null = null,
     searchText?: string,
-    options?: { offlineMode?: boolean }
+    options?: { useCachedData?: boolean }
 ): Promise<any> => {
-    const offlineMode = !!options?.offlineMode;
-    if (!offlineMode) {
+    const useCachedData = !!options?.useCachedData;
+    if (!useCachedData) {
         return getSunoFeed(cookie, limit, cursor, searchText);
     }
 

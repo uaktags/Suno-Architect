@@ -162,6 +162,62 @@ export const drawLogoExpandingCircle = (
     ctx.restore();
 };
 
+export const drawLogoCircularWave = (
+    ctx: CanvasRenderingContext2D,
+    data: Uint8Array | Float32Array,
+    settings: {
+        activeColor: string;
+        sensitivity: number;
+        centerX: number;
+        centerY: number;
+        radius: number;
+    }
+) => {
+    const { activeColor, sensitivity, centerX, centerY, radius } = settings;
+    const bufferLength = data.length;
+    const usefulLimit = Math.max(8, Math.floor(bufferLength * 0.4));
+    const numPoints = 96;
+    const maxAmp = radius * 0.9;
+
+    const points: Array<{ x: number; y: number }> = [];
+
+    for (let i = 0; i < numPoints; i++) {
+        const angle = (Math.PI * 2 * i) / numPoints - (Math.PI / 2);
+        const sampleIdx = 2 + Math.floor((i / numPoints) * (usefulLimit - 2));
+        const sample = Math.max(0, Math.min(255, data[sampleIdx] as number));
+        const energy = Math.pow(sample / 255, 1.45) * Math.max(0.3, sensitivity);
+        const r = radius + (energy * maxAmp);
+        points.push({
+            x: centerX + Math.cos(angle) * r,
+            y: centerY + Math.sin(angle) * r,
+        });
+    }
+
+    ctx.save();
+    ctx.beginPath();
+    if (points.length > 0) {
+        const last = points[points.length - 1];
+        const first = points[0];
+        ctx.moveTo((last.x + first.x) / 2, (last.y + first.y) / 2);
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            const next = points[(i + 1) % points.length];
+            ctx.quadraticCurveTo(p.x, p.y, (p.x + next.x) / 2, (p.y + next.y) / 2);
+        }
+    }
+    ctx.closePath();
+    ctx.lineWidth = Math.max(2, radius * 0.06);
+    ctx.strokeStyle = activeColor;
+    ctx.stroke();
+
+    const fill = ctx.createRadialGradient(centerX, centerY, radius * 0.4, centerX, centerY, radius + maxAmp);
+    fill.addColorStop(0, hexToRgba(activeColor, 0.03));
+    fill.addColorStop(1, hexToRgba(activeColor, 0.18));
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.restore();
+};
+
 export const drawQt6Visualizer = (
     ctx: CanvasRenderingContext2D, 
     width: number, 

@@ -3,14 +3,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SunoClip, AlignedWord, Qt6Style } from '../../../types';
 import { getLyricAlignment, getSunoClip } from '../../../services/sunoApi';
 import { ASPECT_RATIOS } from '../../../constants';
-import { drawCover, drawQt6Visualizer, drawScrollingLyrics, drawCornerPulseVisualizer, drawLogoExpandingCircle, drawLogoWatermark } from '../../../utils/visualizer';
+import { drawCover, drawQt6Visualizer, drawScrollingLyrics, drawCornerPulseVisualizer, drawLogoCircularWave, drawLogoExpandingCircle, drawLogoWatermark } from '../../../utils/visualizer';
 import { groupLyricsByLines, matchWordsToPrompt, groupWordsByTiming, stripMetaTags, getCleanAlignedWords } from '../../../utils/lyrics';
 import { performOfflineRender } from '../../../utils/offlineRender';
 
 type VisualMode = 'cover' | 'qt6' | 'hybrid';
 type VisualizerTemplate = 'classic' | 'clean-lyrics' | 'corner-pulse' | 'cinematic-bars';
 type LogoPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
-type LogoPulseStyle = 'expanding-circle' | 'radial-bars';
+type LogoPulseStyle = 'expanding-circle' | 'radial-bars' | 'circular-wave';
 type VisualizerConfig = {
     aspectRatio: keyof typeof ASPECT_RATIOS;
     showBackgroundLayer: boolean;
@@ -794,6 +794,14 @@ export const useVisualizer = (
                             centerX,
                             centerY,
                             radius: pulseRadius * 0.55
+                        });
+                    } else if (logoPulseStyle === 'circular-wave') {
+                        drawLogoCircularWave(ctx, visualData, {
+                            activeColor,
+                            sensitivity: logoPulseSensitivity,
+                            centerX,
+                            centerY,
+                            radius: pulseRadius * 0.5
                         });
                     } else {
                         drawLogoExpandingCircle(ctx, visualData, {

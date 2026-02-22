@@ -32,8 +32,8 @@ interface VisualizerSettingsProps {
     setLogoOpacity: (val: number) => void;
     logoPulseEnabled: boolean;
     setLogoPulseEnabled: (val: boolean) => void;
-    logoPulseStyle: 'expanding-circle' | 'radial-bars';
-    setLogoPulseStyle: (val: 'expanding-circle' | 'radial-bars') => void;
+    logoPulseStyle: 'expanding-circle' | 'radial-bars' | 'circular-wave';
+    setLogoPulseStyle: (val: 'expanding-circle' | 'radial-bars' | 'circular-wave') => void;
     logoPulseGap: number;
     setLogoPulseGap: (val: number) => void;
     logoPulseScale: number;
@@ -90,7 +90,7 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
 }) => {
   const [newPresetName, setNewPresetName] = useState('');
   const [selectedSavedPresetId, setSelectedSavedPresetId] = useState('');
-  const logoVisualizerMode: 'off' | 'expanding-circle' | 'radial-bars' =
+  const logoVisualizerMode: 'off' | 'expanding-circle' | 'radial-bars' | 'circular-wave' =
     logoPulseEnabled ? logoPulseStyle : 'off';
 
   const handleSavePreset = () => {
@@ -327,7 +327,7 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
                 <select
                     value={logoVisualizerMode}
                     onChange={(e) => {
-                        const value = e.target.value as 'off' | 'expanding-circle' | 'radial-bars';
+                        const value = e.target.value as 'off' | 'expanding-circle' | 'radial-bars' | 'circular-wave';
                         if (value === 'off') {
                             setLogoPulseEnabled(false);
                             return;
@@ -340,6 +340,7 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
                     <option value="off">Off</option>
                     <option value="expanding-circle">Expanding Circle</option>
                     <option value="radial-bars">Radial Bars</option>
+                    <option value="circular-wave">Circular Wave</option>
                 </select>
             </div>
             <div>

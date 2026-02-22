@@ -1,4 +1,5 @@
-import { getSunoFeed, getSunoPlaylist } from './sunoApi';
+import { getLyricAlignment, getSunoClip, getSunoFeed, getSunoPlaylist } from './sunoApi';
+import { generateLrc, generateSrt, groupWordsByTiming, stripMetaTags } from '../utils/lyrics';
 import {
   OfflinePlaylist,
   OfflineTrack,
@@ -37,12 +38,16 @@ const buildTrack = (clip: any, now: number, prev?: OfflineTrack): OfflineTrack =
   const metadata = clip?.metadata || {};
   const audioUrl = clip?.audio_url || clip?.song_path || clip?.audioUrl || '';
   const imageUrl = clip?.image_large_url || clip?.image_url || '';
+  const promptLyrics = metadata.prompt || prev?.lyricsText || '';
   return {
     id: clip.id,
     sunoId: clip.id,
     title: clip.title || 'Untitled',
     audioUrl,
     imageUrl,
+    lyricsText: promptLyrics,
+    lrcContent: prev?.lrcContent || '',
+    srtContent: prev?.srtContent || '',
     metadata: {
       tags: toTags(metadata.tags),
       prompt: metadata.prompt || '',
@@ -62,8 +67,45 @@ const isTrackEqual = (a: OfflineTrack, b: OfflineTrack) => {
     a.imageUrl === b.imageUrl &&
     a.metadata.prompt === b.metadata.prompt &&
     a.metadata.durationMs === b.metadata.durationMs &&
-    a.metadata.tags.join('|') === b.metadata.tags.join('|')
+    a.metadata.tags.join('|') === b.metadata.tags.join('|') &&
+    a.lyricsText === b.lyricsText &&
+    a.lrcContent === b.lrcContent &&
+    a.srtContent === b.srtContent
   );
+};
+
+const enrichTrackLyricsAndCaptions = async (track: OfflineTrack, cookie: string): Promise<OfflineTrack> => {
+  if (!cookie || !track.id) return track;
+  try {
+    const clip = await getSunoClip(track.id, cookie);
+    const prompt = clip?.metadata?.prompt || track.metadata.prompt || track.lyricsText || '';
+    const cleanLyrics = stripMetaTags(prompt);
+
+    let lrcContent = track.lrcContent || '';
+    let srtContent = track.srtContent || '';
+
+    try {
+      const alignment = await getLyricAlignment(track.id, cookie);
+      const alignedWords = Array.isArray(alignment?.aligned_words) ? alignment.aligned_words : [];
+      if (alignedWords.length > 0) {
+        const lines = groupWordsByTiming(alignedWords);
+        lrcContent = generateLrc(lines);
+        srtContent = generateSrt(lines);
+      }
+    } catch {
+      // Alignment can fail for some tracks; still keep lyrics cached.
+    }
+
+    return {
+      ...track,
+      lyricsText: cleanLyrics || prompt,
+      lrcContent,
+      srtContent,
+      raw: clip || track.raw,
+    };
+  } catch {
+    return track;
+  }
 };
 
 const collectAssetUrls = (tracks: OfflineTrack[]): string[] => {
@@ -184,8 +226,21 @@ export async function downloadAccountCache(
     onProgress?.({ phase: 'diffing', completed: idx + 1, total: remoteClips.length, message: `Compared ${idx + 1}/${remoteClips.length} tracks` });
   });
 
-  onProgress?.({ phase: 'upserting', completed: 0, total: toWrite.length, message: 'Persisting metadata to IndexedDB…' });
-  await upsertTracks(toWrite);
+  const enrichedTracks: OfflineTrack[] = [];
+  for (let i = 0; i < toWrite.length; i += 1) {
+    const track = toWrite[i];
+    const enriched = await enrichTrackLyricsAndCaptions(track, cookie);
+    enrichedTracks.push(enriched);
+    onProgress?.({
+      phase: 'upserting',
+      completed: i + 1,
+      total: toWrite.length,
+      message: `Caching lyrics/LRC ${i + 1}/${toWrite.length}`,
+    });
+  }
+
+  onProgress?.({ phase: 'upserting', completed: 0, total: enrichedTracks.length, message: 'Persisting metadata to IndexedDB…' });
+  await upsertTracks(enrichedTracks);
   await upsertPlaylists(remotePlaylists);
   await setSyncMeta(LAST_SYNC_META_KEY, now);
 
@@ -200,4 +255,3 @@ export async function downloadAccountCache(
 export const getLastAccountSync = async (): Promise<number | undefined> => {
   return getSyncMeta<number>(LAST_SYNC_META_KEY);
 };
-

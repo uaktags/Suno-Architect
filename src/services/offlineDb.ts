@@ -6,6 +6,9 @@ export interface OfflineTrack {
   title: string;
   audioUrl: string;
   imageUrl: string;
+  lyricsText: string;
+  lrcContent: string;
+  srtContent: string;
   metadata: {
     tags: string[];
     prompt: string;
@@ -74,7 +77,7 @@ interface SunoOfflineDB extends DBSchema {
 }
 
 const DB_NAME = 'suno-architect-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: ReturnType<typeof openDB<SunoOfflineDB>> | null = null;
 
@@ -82,17 +85,25 @@ export const getOfflineDb = () => {
   if (!dbPromise) {
     dbPromise = openDB<SunoOfflineDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
-        const trackStore = db.createObjectStore('tracks', { keyPath: 'id' });
-        trackStore.createIndex('byUpdatedAt', 'updatedAt');
-        trackStore.createIndex('byCreatedAt', 'createdAt');
+        if (!db.objectStoreNames.contains('tracks')) {
+          const trackStore = db.createObjectStore('tracks', { keyPath: 'id' });
+          trackStore.createIndex('byUpdatedAt', 'updatedAt');
+          trackStore.createIndex('byCreatedAt', 'createdAt');
+        }
 
-        const albumStore = db.createObjectStore('albums', { keyPath: 'id' });
-        albumStore.createIndex('byUpdatedAt', 'updatedAt');
+        if (!db.objectStoreNames.contains('albums')) {
+          const albumStore = db.createObjectStore('albums', { keyPath: 'id' });
+          albumStore.createIndex('byUpdatedAt', 'updatedAt');
+        }
 
-        const playlistStore = db.createObjectStore('playlists', { keyPath: 'id' });
-        playlistStore.createIndex('byUpdatedAt', 'updatedAt');
+        if (!db.objectStoreNames.contains('playlists')) {
+          const playlistStore = db.createObjectStore('playlists', { keyPath: 'id' });
+          playlistStore.createIndex('byUpdatedAt', 'updatedAt');
+        }
 
-        db.createObjectStore('syncMeta', { keyPath: 'key' });
+        if (!db.objectStoreNames.contains('syncMeta')) {
+          db.createObjectStore('syncMeta', { keyPath: 'key' });
+        }
       },
     });
   }
@@ -168,4 +179,3 @@ export const getSyncMeta = async <T = any>(key: string): Promise<T | undefined> 
   const record = await db.get('syncMeta', key);
   return record?.value as T | undefined;
 };
-

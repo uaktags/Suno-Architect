@@ -133,7 +133,7 @@ const HistoryToolbar: React.FC<HistoryToolbarProps> = ({
                     ? 'bg-slate-700/50 text-slate-300 border-slate-600 cursor-wait'
                     : 'bg-black text-green-300 border-green-500 hover:bg-slate-950'}`}
                 >
-                    {isDownloadingOfflineCache ? (offlineProgress || 'Downloading cache...') : 'Download Account Cache'}
+                    {isDownloadingOfflineCache ? (offlineProgress || 'Syncing local cache...') : 'Sync Local Library Cache'}
                 </button>
             </div>
         </div>

@@ -18,8 +18,8 @@ interface HistorySectionProps {
   onDownloadOfflineCache: () => void;
   isDownloadingOfflineCache: boolean;
   offlineProgress?: string;
-  offlineMode: boolean;
-  onToggleOfflineMode: (value: boolean) => void;
+  useCachedData: boolean;
+  onToggleUseCachedData: (value: boolean) => void;
 }
 
 // Helper to map API response to SunoClip (reused logic)
@@ -75,8 +75,8 @@ const HistorySection: React.FC<HistorySectionProps> = ({
   onDownloadOfflineCache,
   isDownloadingOfflineCache,
   offlineProgress,
-  offlineMode,
-  onToggleOfflineMode,
+  useCachedData,
+  onToggleUseCachedData,
 }) => {
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   
@@ -137,7 +137,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({
               }
           } else {
               // Feed Search
-              const data = await getSunoFeedOfflineAware(sunoCookie, limit, null, input, { offlineMode });
+              const data = await getSunoFeedOfflineAware(sunoCookie, limit, null, input, { useCachedData });
               if (data && Array.isArray(data.clips)) {
                   const results = data.clips.map(mapSunoClip);
                   setSearchResults(results);
@@ -204,18 +204,18 @@ const HistorySection: React.FC<HistorySectionProps> = ({
             offlineProgress={offlineProgress}
         />
         <div className="flex items-center gap-3 border border-slate-700 bg-black/40 px-3 py-2 rounded-md w-fit">
-          <span className="text-[11px] uppercase tracking-wider text-slate-300">Mode</span>
+          <span className="text-[11px] uppercase tracking-wider text-slate-300">Library Source</span>
           <button
-            onClick={() => onToggleOfflineMode(!offlineMode)}
-            className={`text-xs font-bold px-2.5 py-1 rounded border ${offlineMode ? 'bg-green-400/10 text-green-300 border-green-500' : 'bg-slate-800 text-slate-200 border-slate-600'}`}
+            onClick={() => onToggleUseCachedData(!useCachedData)}
+            className={`text-xs font-bold px-2.5 py-1 rounded border ${useCachedData ? 'bg-green-400/10 text-green-300 border-green-500' : 'bg-slate-800 text-slate-200 border-slate-600'}`}
           >
-            {offlineMode ? 'Offline' : 'Online'}
+            {useCachedData ? 'Local Library Mode' : 'Live Suno API'}
           </button>
         </div>
 
         <div className="border border-slate-700 bg-black/40 px-3 py-3 rounded-md">
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-300">Playlist ZIP (Offline Cache)</p>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-300">Playlist ZIP (Cached Library)</p>
             <button
               type="button"
               onClick={handleDownloadPlaylistZip}

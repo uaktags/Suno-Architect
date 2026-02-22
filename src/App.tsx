@@ -147,7 +147,7 @@ const App: React.FC = () => {
   const [sunoCredits, setSunoCredits] = useState<number | null>(null);
   const [isSyncingHistory, setIsSyncingHistory] = useState(false);
   const [syncProgress, setSyncProgress] = useState('');
-  const [offlineMode, setOfflineMode] = useState(false);
+  const [useCachedData, setUseCachedData] = useState(false);
   const [isDownloadingOfflineCache, setIsDownloadingOfflineCache] = useState(false);
   const [offlineProgress, setOfflineProgress] = useState('');
 
@@ -171,7 +171,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const savedCookie = localStorage.getItem('suno_cookie');
     const savedModel = localStorage.getItem('suno_model');
-    const savedOfflineMode = localStorage.getItem('offline_mode');
+    const savedLocalLibraryMode = localStorage.getItem('local_library_mode');
     
     if (savedCookie) {
       setSunoCookie(savedCookie);
@@ -186,14 +186,14 @@ const App: React.FC = () => {
     if (savedModel) {
       setSunoModel(savedModel);
     }
-    if (savedOfflineMode) {
-      setOfflineMode(savedOfflineMode === '1');
+    if (savedLocalLibraryMode) {
+      setUseCachedData(savedLocalLibraryMode === '1');
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('offline_mode', offlineMode ? '1' : '0');
-  }, [offlineMode]);
+    localStorage.setItem('local_library_mode', useCachedData ? '1' : '0');
+  }, [useCachedData]);
 
   useEffect(() => {
     localStorage.setItem('suno_history', JSON.stringify(history));
@@ -298,7 +298,7 @@ const App: React.FC = () => {
 
   const fetchAndMergeSunoHistory = async (cookie: string) => {
     try {
-        const feedData = await getSunoFeedOfflineAware(cookie, 50, null, undefined, { offlineMode });
+        const feedData = await getSunoFeedOfflineAware(cookie, 50, null, undefined, { useCachedData });
         if (feedData && Array.isArray(feedData.clips)) {
             const newClips = feedData.clips.map(mapSunoClip);
             mergeClips(newClips);
@@ -320,7 +320,7 @@ const App: React.FC = () => {
     setSyncProgress('Fetching...');
     
     try {
-        const feedData = await getSunoFeedOfflineAware(sunoCookie, fetchLimit, null, undefined, { offlineMode });
+        const feedData = await getSunoFeedOfflineAware(sunoCookie, fetchLimit, null, undefined, { useCachedData });
         
         if (feedData && Array.isArray(feedData.clips)) {
              const newClips = feedData.clips.map(mapSunoClip);
@@ -332,7 +332,7 @@ const App: React.FC = () => {
              setSyncProgress(`Rate limited. Retrying...`);
              await new Promise(r => setTimeout(r, 5000));
              try {
-                const feedData = await getSunoFeedOfflineAware(sunoCookie, fetchLimit, null, undefined, { offlineMode });
+                const feedData = await getSunoFeedOfflineAware(sunoCookie, fetchLimit, null, undefined, { useCachedData });
                 if (feedData && Array.isArray(feedData.clips)) {
                     const newClips = feedData.clips.map(mapSunoClip);
                     mergeClips(newClips);
@@ -365,12 +365,12 @@ const App: React.FC = () => {
       const result = await downloadAccountCache(sunoCookie, [], (progress) => {
         setOfflineProgress(progress.message);
       });
-      setOfflineMode(true);
+      setUseCachedData(true);
       setOfflineProgress(`Cached: +${result.added} new, ${result.updated} updated, ${result.unchanged} unchanged`);
       await handleFetchHistory(200);
     } catch (error: any) {
-      console.error('Offline cache sync failed', error);
-      setOfflineProgress('Offline sync failed.');
+      console.error('Local library cache sync failed', error);
+      setOfflineProgress('Local library sync failed.');
     } finally {
       setIsDownloadingOfflineCache(false);
       setTimeout(() => setOfflineProgress(''), 3500);
@@ -636,8 +636,8 @@ const App: React.FC = () => {
                     onDownloadOfflineCache={handleDownloadOfflineCache}
                     isDownloadingOfflineCache={isDownloadingOfflineCache}
                     offlineProgress={offlineProgress}
-                    offlineMode={offlineMode}
-                    onToggleOfflineMode={setOfflineMode}
+                    useCachedData={useCachedData}
+                    onToggleUseCachedData={setUseCachedData}
                 />
               );
           case 'visualizer':
