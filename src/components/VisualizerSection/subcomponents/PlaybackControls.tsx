@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { ASPECT_RATIOS } from '../../../constants';
+import { AppButton, AppCard } from '../../ui/AppPrimitives';
 
 interface PlaybackControlsProps {
   progress: number;
@@ -24,7 +25,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   formatTime
 }) => {
   return (
-    <div className="bg-slate-900 border border-[var(--app-panel-border)] rounded-xl p-4 space-y-3">
+    <AppCard className="bg-slate-900 rounded-xl p-4 space-y-3">
         <div className="relative group">
             <input 
               type="range" 
@@ -40,9 +41,9 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         </div>
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-                <button 
+                <AppButton
                     onClick={onTogglePlay}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-black hover:bg-purple-400 transition-colors"
+                    className="w-10 h-10 min-h-0 p-0 flex items-center justify-center rounded-full bg-white text-black border-white hover:bg-purple-400"
                 >
                     {isPlaying ? (
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -53,7 +54,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                           <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
                         </svg>
                     )}
-                </button>
+                </AppButton>
                 <div className="text-xs font-mono text-slate-400">
                     <span className="text-white">{formatTime(progress)}</span> / {formatTime(duration)}
                 </div>
@@ -62,7 +63,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                 {ASPECT_RATIOS[aspectRatio].label} • {isRendering ? 'RENDERING' : 'PREVIEW'}
             </div>
         </div>
-    </div>
+    </AppCard>
   );
 };
 

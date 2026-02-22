@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { VISUALIZER_FONTS } from '../../constants';
 import { Qt6Style } from '../../types';
+import { AppButton } from '../ui/AppPrimitives';
 
 interface VisualizerSettingsProps {
     savedPresets: Array<{ id: string; name: string; createdAt: string }>;
@@ -136,12 +137,23 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
                         placeholder="Preset name"
                         className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded px-2 py-1.5 text-xs text-slate-100"
                     />
-                    <button onClick={handleSavePreset} className="rounded px-2 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-semibold">
+                    <AppButton
+                        tone="default"
+                        variant="primary"
+                        onClick={handleSavePreset}
+                        size="sm"
+                    >
                         Save Current Settings
-                    </button>
-                    <button onClick={() => selectedSavedPresetId && onApplySavedPreset(selectedSavedPresetId)} disabled={!selectedSavedPresetId} className="rounded px-2 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-semibold">
+                    </AppButton>
+                    <AppButton
+                        tone="default"
+                        variant="secondary"
+                        onClick={() => selectedSavedPresetId && onApplySavedPreset(selectedSavedPresetId)}
+                        disabled={!selectedSavedPresetId}
+                        size="sm"
+                    >
                         Load Saved Preset
-                    </button>
+                    </AppButton>
                 </div>
                 <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
                     <select
@@ -154,17 +166,19 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
                             <option key={preset.id} value={preset.id}>{preset.name}</option>
                         ))}
                     </select>
-                    <button
+                    <AppButton
+                        tone="default"
+                        variant="danger"
                         onClick={() => {
                             if (!selectedSavedPresetId) return;
                             onDeleteSavedPreset(selectedSavedPresetId);
                             setSelectedSavedPresetId('');
                         }}
                         disabled={!selectedSavedPresetId}
-                        className="rounded px-2 py-1.5 text-xs bg-red-600/80 hover:bg-red-500 disabled:opacity-50 text-white font-semibold"
+                        size="sm"
                     >
                         Delete Selected Preset
-                    </button>
+                    </AppButton>
                     <div className="text-[10px] text-slate-500 flex items-center justify-start md:justify-end">
                         {savedPresets.length} saved preset{savedPresets.length === 1 ? '' : 's'}
                     </div>
@@ -500,18 +514,22 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
                         <option value="organic-ambient">Look Preset: Organic Ambient</option>
                         <option value="social-hybrid">Look Preset: Social Hybrid</option>
                     </select>
-                    <button
+                    <AppButton
+                        tone="default"
+                        variant="primary"
                         onClick={() => onApplyQt6LookPreset(selectedLookPreset)}
-                        className="rounded px-2 py-1.5 text-xs bg-[var(--app-accent)] hover:bg-[var(--app-accent)] text-white font-semibold"
+                        size="sm"
                     >
                         Apply Look Preset
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
+                        tone="default"
+                        variant="secondary"
                         onClick={onRandomizeQt6Look}
-                        className="rounded px-2 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-white font-semibold"
+                        size="sm"
                     >
                         Randomize Style
-                    </button>
+                    </AppButton>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>

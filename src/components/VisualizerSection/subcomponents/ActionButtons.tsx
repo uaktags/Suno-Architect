@@ -1,5 +1,6 @@
 import React from 'react';
 import { AUDIO_BITRATES } from '../../../constants';
+import { AppButton, AppFieldLabel, AppSelect } from '../../ui/AppPrimitives';
 
 interface ActionButtonsProps {
   audioBitrate: number;
@@ -33,30 +34,31 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
           <div className="flex-1">
-            <label className="text-[10px] text-slate-500 block mb-1">Audio Quality</label>
-            <select 
+            <AppFieldLabel className="text-[10px] mb-1">Audio Quality</AppFieldLabel>
+            <AppSelect
                 value={audioBitrate}
                 onChange={(e) => setAudioBitrate(Number(e.target.value))}
-                className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded text-xs text-white p-1.5 focus:ring-1 focus:ring-[var(--app-accent)]/50"
+                className="text-xs p-1.5 py-1"
             >
                 {AUDIO_BITRATES.map(b => (
                     <option key={b.value} value={b.value}>{b.label}</option>
                 ))}
-            </select>
+            </AppSelect>
           </div>
           <div className="w-24">
-            <label className="text-[10px] text-slate-500 block mb-1">Frame Rate</label>
-            <select 
+            <AppFieldLabel className="text-[10px] mb-1">Frame Rate</AppFieldLabel>
+            <AppSelect
                 value={fps}
                 onChange={(e) => setFps(Number(e.target.value))}
-                className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded text-xs text-white p-1.5 focus:ring-1 focus:ring-[var(--app-accent)]/50"
+                className="text-xs p-1.5 py-1"
             >
                 <option value="30">30 FPS</option>
                 <option value="60">60 FPS</option>
-            </select>
+            </AppSelect>
           </div>
       </div>
-      <button
+      <AppButton
+        variant="primary"
         onClick={localExportRemoved ? undefined : onStartRender}
         disabled={isDisabled}
         className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2
@@ -80,7 +82,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                 Local Export Removed
               </>
           )}
-      </button>
+      </AppButton>
       {isRendering && (
           <div className="w-full bg-[var(--app-panel)] rounded-full h-2 overflow-hidden mt-2">
               <div className="bg-[var(--app-accent)] h-full transition-all duration-300" style={{ width: `${renderProgress}%` }}></div>

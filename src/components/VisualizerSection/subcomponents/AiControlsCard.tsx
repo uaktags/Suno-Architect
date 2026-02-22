@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlignedWord } from '../../../types';
+import { AppButton, AppCard } from '../../ui/AppPrimitives';
 
 interface AiControlsCardProps {
   alignment: AlignedWord[] | null;
@@ -17,7 +18,7 @@ const AiControlsCard: React.FC<AiControlsCardProps> = ({
   onSmartGroup 
 }) => {
   return (
-    <div className="bg-[var(--app-panel)] rounded-xl p-4 border border-[var(--app-panel-border)]">
+    <AppCard className="rounded-xl p-4">
         <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 mb-1">
                 <span className={`w-2 h-2 rounded-full ${alignment ? 'bg-green-500' : 'bg-red-500'}`}></span>
@@ -27,10 +28,11 @@ const AiControlsCard: React.FC<AiControlsCardProps> = ({
             </div>
             
             {alignment && (
-                  <button 
+                  <AppButton
+                    variant="secondary"
                     onClick={onSmartGroup}
                     disabled={isGrouping || isRendering}
-                    className="w-full py-2 bg-slate-700 hover:bg-[var(--app-accent)] text-white text-xs font-bold rounded transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-2 bg-slate-700 hover:bg-[var(--app-accent)] text-white text-xs flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                       {isGrouping ? (
                           <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -46,7 +48,7 @@ const AiControlsCard: React.FC<AiControlsCardProps> = ({
                         </svg>
                       )}
                       Refine Lines with AI
-                  </button>
+                  </AppButton>
             )}
           </div>
           
@@ -55,7 +57,7 @@ const AiControlsCard: React.FC<AiControlsCardProps> = ({
                   Attempts to fetch alignment happen automatically. If red, ensure you are logged in and this is your song.
               </p>
           )}
-    </div>
+    </AppCard>
   );
 };
 

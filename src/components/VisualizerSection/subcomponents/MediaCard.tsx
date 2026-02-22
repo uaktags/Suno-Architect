@@ -2,6 +2,7 @@
 import React from 'react';
 import { ASPECT_RATIOS } from '../../../constants';
 import { Qt6Style } from '../../../types';
+import { AppButton, AppCard, AppFieldLabel, AppSelect } from '../../ui/AppPrimitives';
 
 interface MediaCardProps {
   showBackgroundLayer: boolean;
@@ -38,7 +39,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
   handleImageError
 }) => {
   return (
-    <div className="bg-[var(--app-panel)] rounded-xl overflow-hidden border border-[var(--app-panel-border)] shadow-lg p-4 space-y-4">
+    <AppCard className="rounded-xl overflow-hidden shadow-lg p-4 space-y-4">
       {/* Cover Art / Visualizer Preview */}
       <div className="relative group rounded-lg overflow-hidden border border-[var(--app-panel-border)]/50">
           {showBackgroundLayer ? (
@@ -62,15 +63,16 @@ const MediaCard: React.FC<MediaCardProps> = ({
                         ) : (
                             <img src={customBg.url} className="w-full h-full object-cover" alt="custom" />
                         )}
-                        <button 
+                        <AppButton
+                            variant="danger"
                             onClick={() => setCustomBg(null)}
-                            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full shadow-lg hover:bg-red-500"
+                            className="absolute top-1 right-1 h-auto min-h-0 p-1 rounded-full shadow-lg bg-red-600 text-white border-red-500 hover:bg-red-500"
                             title="Remove Custom BG"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
                                 <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                             </svg>
-                        </button>
+                        </AppButton>
                     </div>
                 )}
             </>
@@ -115,41 +117,42 @@ const MediaCard: React.FC<MediaCardProps> = ({
       <div className="space-y-3">
               {/* Aspect Ratio Selector */}
               <div>
-                  <label className="text-xs text-slate-500 block mb-1">Aspect Ratio</label>
-                  <select 
+                  <AppFieldLabel>Aspect Ratio</AppFieldLabel>
+                  <AppSelect
                     value={aspectRatio}
                     onChange={(e) => setAspectRatio(e.target.value as keyof typeof ASPECT_RATIOS)}
-                    className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded p-2 text-xs text-white focus:ring-1 focus:ring-[var(--app-accent)]/50"
+                    className="p-2 text-xs"
                   >
                       {Object.entries(ASPECT_RATIOS).map(([key, val]) => (
                           <option key={key} value={key}>{val.label} ({val.width}x{val.height})</option>
                       ))}
-                  </select>
+                  </AppSelect>
               </div>
 
               {/* Layer Toggles */}
               <div>
-                  <label className="text-xs text-slate-500 block mb-1">Layers</label>
+                  <AppFieldLabel>Layers</AppFieldLabel>
                   <div className="grid grid-cols-2 gap-2">
-                      <button
+                      <AppButton
                         onClick={() => setShowBackgroundLayer(!showBackgroundLayer)}
-                        className={`text-[10px] font-bold py-2 rounded transition-colors border ${showBackgroundLayer ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-900 border-[var(--app-panel-border)] text-slate-400'}`}
+                        className={`text-[10px] py-2 ${showBackgroundLayer ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-900 border-[var(--app-panel-border)] text-slate-400'}`}
                       >
                         Background Media
-                      </button>
-                      <button
+                      </AppButton>
+                      <AppButton
+                        variant={mainVisualizerEnabled ? 'primary' : 'secondary'}
                         onClick={() => setMainVisualizerEnabled(!mainVisualizerEnabled)}
-                        className={`text-[10px] font-bold py-2 rounded transition-colors border ${mainVisualizerEnabled ? 'bg-[var(--app-accent)] border-purple-500 text-white' : 'bg-slate-900 border-[var(--app-panel-border)] text-slate-400'}`}
+                        className={`text-[10px] py-2 ${mainVisualizerEnabled ? 'bg-[var(--app-accent)] border-purple-500 text-white' : 'bg-slate-900 border-[var(--app-panel-border)] text-slate-400'}`}
                       >
                         Main Visualizer
-                      </button>
+                      </AppButton>
                   </div>
               </div>
 
               {/* Background File Upload */}
               {showBackgroundLayer && (
                   <div>
-                      <label className="text-xs text-slate-500 block mb-1">Custom Media</label>
+                      <AppFieldLabel>Custom Media</AppFieldLabel>
                       <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-[var(--app-panel)] transition-colors group bg-[var(--app-panel)]">
                           <input 
                             type="file" 
@@ -168,15 +171,15 @@ const MediaCard: React.FC<MediaCardProps> = ({
               )}
 
               <div>
-                  <label className="text-xs text-slate-500 block mb-1">Watermark / Logo</label>
+                  <AppFieldLabel>Watermark / Logo</AppFieldLabel>
                   {logoAsset ? (
                     <div className="flex items-center justify-between bg-slate-900 border border-cyan-500/30 rounded p-2">
                         <span className="text-xs text-cyan-200 truncate pr-3" title={logoAsset.name}>{logoAsset.name}</span>
-                        <button onClick={() => setLogoAsset(null)} className="text-slate-500 hover:text-white">
+                        <AppButton onClick={() => setLogoAsset(null)} className="h-auto min-h-0 p-0 border-0 text-slate-500 hover:text-white hover:bg-transparent">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                                 <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                             </svg>
-                        </button>
+                        </AppButton>
                     </div>
                   ) : (
                     <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-[var(--app-panel)] transition-colors group bg-[var(--app-panel)]">
@@ -194,7 +197,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
               {/* Audio File Upload */}
               <div>
-                  <label className="text-xs text-slate-500 block mb-1">Audio Source (Override)</label>
+                  <AppFieldLabel>Audio Source (Override)</AppFieldLabel>
                   {customAudio ? (
                       <div className="flex items-center justify-between bg-slate-900 border border-green-500/30 rounded p-2">
                           <div className="flex items-center gap-2 overflow-hidden">
@@ -203,11 +206,11 @@ const MediaCard: React.FC<MediaCardProps> = ({
                               </svg>
                               <span className="text-xs text-green-300 truncate" title={customAudio.name}>{customAudio.name}</span>
                           </div>
-                          <button onClick={() => setCustomAudio(null)} className="text-slate-500 hover:text-white">
+                          <AppButton onClick={() => setCustomAudio(null)} className="h-auto min-h-0 p-0 border-0 text-slate-500 hover:text-white hover:bg-transparent">
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                                   <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                               </svg>
-                          </button>
+                          </AppButton>
                       </div>
                   ) : (
                     <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-[var(--app-panel)] transition-colors group bg-[var(--app-panel)]">
@@ -228,7 +231,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
                   )}
               </div>
       </div>
-    </div>
+    </AppCard>
   );
 };
 
