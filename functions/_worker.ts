@@ -974,7 +974,7 @@ async function handleSongMetaPut(request: Request, env: Env, songId: string): Pr
   if (authResult instanceof Response) return authResult;
   const body = await parseJsonBody(request);
   if (!body) return json(request, env, { error: "Invalid JSON body" }, 400);
-  const tags = Array.isArray(body.tags)
+  const tags: string[] = Array.isArray(body.tags)
     ? Array.from(new Set(body.tags.map((t: unknown) => String(t || "").trim()).filter(Boolean)))
     : [];
 
@@ -993,6 +993,126 @@ async function handleSongMetaPut(request: Request, env: Env, songId: string): Pr
 
   memorySongTags.set(`${authResult.id}:${songId}`, new Set(tags));
   return json(request, env, { success: true, tags });
+}
+
+async function handlePublishYouTube(request: Request, env: Env): Promise<Response> {
+  if (isRateLimited(request, "publish-youtube", 30, 60 * 1000)) {
+    return json(request, env, { error: "Rate limit exceeded. Slow down and retry." }, 429);
+  }
+  const authResult = await requireAuth(request, env);
+  if (authResult instanceof Response) return authResult;
+
+  const body = await parseJsonBody(request);
+  if (!body) return json(request, env, { error: "Invalid JSON body" }, 400);
+
+  const title = String(body.title || "Untitled").trim();
+  const description = String(body.description || "").trim();
+  const clipId = String(body.clipId || "").trim();
+  const aspect = String(body.aspect || "landscape").trim();
+  if (!clipId) return json(request, env, { error: "Missing clipId" }, 400);
+  if (aspect !== "landscape") {
+    return json(request, env, { error: "YouTube publishing requires landscape (16:9)." }, 400);
+  }
+
+  const uploadPayload = {
+    snippet: {
+      title,
+      description,
+      categoryId: "10",
+    },
+    status: {
+      privacyStatus: "public",
+    },
+    media: {
+      clipId,
+      aspect,
+    },
+    crossPost: body.crossPost || null,
+  };
+
+  // OAuth/upload stub: structure intentionally mirrors real outbound call.
+  const upstreamRequest = new Request("https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer STUB_YOUTUBE_TOKEN",
+    },
+    body: JSON.stringify(uploadPayload),
+  });
+
+  return json(request, env, {
+    success: true,
+    provider: "youtube",
+    jobId: `yt_${Date.now()}`,
+    dryRun: true,
+    upstream: {
+      method: upstreamRequest.method,
+      url: upstreamRequest.url,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+    stub: {
+      videoId: `stub-yt-${clipId.slice(0, 8) || "video"}`,
+      watchUrl: `https://youtube.com/watch?v=stub-yt-${clipId.slice(0, 8) || "video"}`,
+    },
+  });
+}
+
+async function handlePublishFacebook(request: Request, env: Env): Promise<Response> {
+  if (isRateLimited(request, "publish-facebook", 30, 60 * 1000)) {
+    return json(request, env, { error: "Rate limit exceeded. Slow down and retry." }, 429);
+  }
+  const authResult = await requireAuth(request, env);
+  if (authResult instanceof Response) return authResult;
+
+  const body = await parseJsonBody(request);
+  if (!body) return json(request, env, { error: "Invalid JSON body" }, 400);
+
+  const title = String(body.title || "Untitled").trim();
+  const description = String(body.description || "").trim();
+  const clipId = String(body.clipId || "").trim();
+  const aspect = String(body.aspect || "landscape").trim();
+  if (!clipId) return json(request, env, { error: "Missing clipId" }, 400);
+  if (aspect !== "landscape" && aspect !== "portrait") {
+    return json(request, env, { error: "Facebook aspect must be landscape or portrait." }, 400);
+  }
+
+  const uploadPayload = {
+    title,
+    description,
+    sourceClip: clipId,
+    aspect,
+  };
+
+  // OAuth/upload stub: structure intentionally mirrors real outbound call.
+  const upstreamRequest = new Request("https://graph.facebook.com/v22.0/me/videos", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer STUB_FACEBOOK_TOKEN",
+    },
+    body: JSON.stringify(uploadPayload),
+  });
+
+  const short = clipId.slice(0, 8) || "video";
+  return json(request, env, {
+    success: true,
+    provider: "facebook",
+    jobId: `fb_${Date.now()}`,
+    dryRun: true,
+    upstream: {
+      method: upstreamRequest.method,
+      url: upstreamRequest.url,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+    stub: {
+      videoId: `stub-fb-${short}`,
+      publishedUrl: `https://www.facebook.com/watch/?v=stub-fb-${short}`,
+    },
+  });
 }
 
 export default {
@@ -1102,6 +1222,14 @@ export default {
       const authResult = await requireAuth(request, env);
       if (authResult instanceof Response) return authResult;
       return handleSunoRequest(request, env, "https://studio-api.prod.suno.com/api/generate/v2/");
+    }
+
+    if (url.pathname === "/api/publish/youtube" && request.method === "POST") {
+      return handlePublishYouTube(request, env);
+    }
+
+    if (url.pathname === "/api/publish/facebook" && request.method === "POST") {
+      return handlePublishFacebook(request, env);
     }
 
     return env.ASSETS.fetch(request);

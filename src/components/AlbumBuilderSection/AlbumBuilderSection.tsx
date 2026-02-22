@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import type { SunoClip } from '../../types';
 import { listAllTracks, OfflineAlbum, OfflineTrack, upsertAlbums } from '../../services/offlineDb';
+import { downloadTracksZipFromCache } from '../../services/playlistDownloadService';
 
 type AlbumType = 'EP' | 'LP' | 'GreatestHits';
 
@@ -155,6 +156,8 @@ const AlbumBuilderSection: React.FC<AlbumBuilderSectionProps> = ({ history }) =>
   const [albumType, setAlbumType] = useState<AlbumType>('EP');
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState('');
+  const [zipState, setZipState] = useState<'idle' | 'packing' | 'done' | 'error'>('idle');
+  const [zipMessage, setZipMessage] = useState('');
   const [ariaLiveMessage, setAriaLiveMessage] = useState('Album builder ready.');
   const [libraryScrollTop, setLibraryScrollTop] = useState(0);
   const libraryContainerRef = useRef<HTMLDivElement | null>(null);
@@ -294,6 +297,24 @@ const AlbumBuilderSection: React.FC<AlbumBuilderSectionProps> = ({ history }) =>
     }
   };
 
+  const onDownloadAlbumZip = async () => {
+    if (!builderTracks.length) return;
+    setZipState('packing');
+    setZipMessage('Building album ZIP from local cache...');
+    try {
+      const title = albumTitle.trim() || 'UNTITLED_ALBUM';
+      const result = await downloadTracksZipFromCache(title, builderTrackIds, 'album');
+      setZipState('done');
+      setZipMessage(`ZIP created. Added ${result.added} tracks, skipped ${result.skipped} uncached tracks.`);
+      setAriaLiveMessage(`Album ZIP exported. Added ${result.added} tracks.`);
+    } catch (error) {
+      console.error('Album ZIP export failed', error);
+      setZipState('error');
+      setZipMessage('Failed to build album ZIP from local cache.');
+      setAriaLiveMessage('Album ZIP export failed.');
+    }
+  };
+
   return (
     <section className="w-full space-y-4 font-mono text-slate-100">
       <div className="border-2 border-slate-700 bg-black p-4">
@@ -408,17 +429,27 @@ const AlbumBuilderSection: React.FC<AlbumBuilderSectionProps> = ({ history }) =>
             <p className="text-[10px] uppercase tracking-widest text-slate-400">
               {builderTracks.length} tracks • {albumType}
             </p>
-            <button
-              type="button"
-              onClick={onSaveAlbum}
-              disabled={!albumTitle.trim() || builderTrackIds.length === 0 || saveState === 'saving'}
-              className="h-10 px-4 border border-cyan-300 text-xs font-bold uppercase tracking-[0.16em] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-cyan-300/10"
-            >
-              {saveState === 'saving' ? 'Saving...' : 'Save Album'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onDownloadAlbumZip}
+                disabled={builderTrackIds.length === 0 || zipState === 'packing'}
+                className="h-10 px-4 border border-amber-300 text-xs font-bold uppercase tracking-[0.16em] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-amber-300/10"
+              >
+                {zipState === 'packing' ? 'Packing ZIP...' : 'Download Album ZIP'}
+              </button>
+              <button
+                type="button"
+                onClick={onSaveAlbum}
+                disabled={!albumTitle.trim() || builderTrackIds.length === 0 || saveState === 'saving'}
+                className="h-10 px-4 border border-cyan-300 text-xs font-bold uppercase tracking-[0.16em] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-cyan-300/10"
+              >
+                {saveState === 'saving' ? 'Saving...' : 'Save Album'}
+              </button>
+            </div>
           </div>
 
-          <div className="mt-2 h-6" role="status" aria-live="polite">
+          <div className="mt-2 min-h-6" role="status" aria-live="polite">
             {saveMessage && (
               <p
                 className={`text-xs ${
@@ -430,6 +461,19 @@ const AlbumBuilderSection: React.FC<AlbumBuilderSectionProps> = ({ history }) =>
                 }`}
               >
                 {saveMessage}
+              </p>
+            )}
+            {zipMessage && (
+              <p
+                className={`text-xs ${
+                  zipState === 'done'
+                    ? 'text-emerald-300'
+                    : zipState === 'error'
+                      ? 'text-red-300'
+                      : 'text-slate-300'
+                }`}
+              >
+                {zipMessage}
               </p>
             )}
           </div>

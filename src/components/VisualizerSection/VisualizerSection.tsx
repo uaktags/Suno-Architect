@@ -24,6 +24,97 @@ interface VisualizerSectionProps {
 
 const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCookie, onUpdateClip, apiKey, geminiModel }) => {
   const { state, setters, refs, handlers } = useVisualizer(history, sunoCookie, onUpdateClip, apiKey, geminiModel);
+  const [publishTarget, setPublishTarget] = React.useState<'youtube' | 'facebook' | 'both'>('youtube');
+  const [fbAspect, setFbAspect] = React.useState<'landscape' | 'portrait'>('landscape');
+  const [publishTitle, setPublishTitle] = React.useState('');
+  const [publishDescription, setPublishDescription] = React.useState('');
+  const [publishState, setPublishState] = React.useState<'idle' | 'publishing' | 'done' | 'error'>('idle');
+  const [publishMessage, setPublishMessage] = React.useState('');
+
+  React.useEffect(() => {
+    if (!state.clipData) return;
+    setPublishTitle(state.clipData.title || 'Untitled');
+    if (!publishDescription.trim()) {
+      setPublishDescription((state.clipData.metadata?.prompt || '').slice(0, 1000));
+    }
+  }, [state.clipData]);
+
+  const effectiveAspect: 'landscape' | 'portrait' =
+    publishTarget === 'youtube' ? 'landscape' : publishTarget === 'facebook' ? fbAspect : fbAspect;
+
+  const handlePublish = async () => {
+    if (!state.clipData) return;
+    setPublishState('publishing');
+    setPublishMessage('Publishing pipeline started...');
+    try {
+      const basePayload = {
+        clipId: state.clipData.id,
+        title: publishTitle.trim() || state.clipData.title || 'Untitled',
+        description: publishDescription.trim(),
+        aspect: effectiveAspect,
+        dryRun: true,
+      };
+
+      if (publishTarget === 'youtube') {
+        const ytRes = await fetch('/api/publish/youtube', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...basePayload, aspect: 'landscape' }),
+        });
+        const ytJson = await ytRes.json();
+        if (!ytRes.ok) throw new Error(ytJson?.error || 'YouTube publish failed.');
+        setPublishState('done');
+        setPublishMessage(`YouTube publish queued (${ytJson?.jobId || 'stub'}).`);
+        return;
+      }
+
+      if (publishTarget === 'facebook') {
+        const fbRes = await fetch('/api/publish/facebook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...basePayload, aspect: fbAspect }),
+        });
+        const fbJson = await fbRes.json();
+        if (!fbRes.ok) throw new Error(fbJson?.error || 'Facebook publish failed.');
+        setPublishState('done');
+        setPublishMessage(`Facebook publish queued (${fbJson?.jobId || 'stub'}).`);
+        return;
+      }
+
+      const fbRes = await fetch('/api/publish/facebook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...basePayload, aspect: fbAspect }),
+      });
+      const fbJson = await fbRes.json();
+      if (!fbRes.ok) throw new Error(fbJson?.error || 'Facebook publish failed.');
+
+      const fbUrl = fbJson?.publishedUrl || fbJson?.stub?.publishedUrl || '';
+      const ytDescription = fbUrl
+        ? `${publishDescription.trim()}\n\nFacebook Post: ${fbUrl}`
+        : publishDescription.trim();
+
+      const ytRes = await fetch('/api/publish/youtube', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...basePayload,
+          aspect: 'landscape',
+          description: ytDescription,
+          crossPost: { facebookUrl: fbUrl || null },
+        }),
+      });
+      const ytJson = await ytRes.json();
+      if (!ytRes.ok) throw new Error(ytJson?.error || 'YouTube publish failed.');
+
+      setPublishState('done');
+      setPublishMessage(`Cross-publish complete. FB (${fbJson?.jobId || 'stub'}) -> YT (${ytJson?.jobId || 'stub'}).`);
+    } catch (error: any) {
+      console.error('Publish workflow failed', error);
+      setPublishState('error');
+      setPublishMessage(error?.message || 'Publish workflow failed.');
+    }
+  };
 
   return (
     <div className="animate-in fade-in duration-500 max-w-5xl mx-auto space-y-8">
@@ -107,6 +198,68 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                         isPreparing={state.isPreparing}
                         hasAlignment={!!state.alignment}
                      />
+
+                     <div className="border-2 border-slate-700 bg-black p-3 space-y-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-300">Publishing Workflow</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <select
+                            value={publishTarget}
+                            onChange={(e) => setPublishTarget(e.target.value as 'youtube' | 'facebook' | 'both')}
+                            className="h-10 px-3 bg-slate-950 border border-slate-700 text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                          >
+                            <option value="youtube">Publish: YouTube (16:9)</option>
+                            <option value="facebook">Publish: Facebook (16:9 / 9:16)</option>
+                            <option value="both">Publish: Both (FB then YT)</option>
+                          </select>
+
+                          {(publishTarget === 'facebook' || publishTarget === 'both') && (
+                            <select
+                              value={fbAspect}
+                              onChange={(e) => setFbAspect(e.target.value as 'landscape' | 'portrait')}
+                              className="h-10 px-3 bg-slate-950 border border-slate-700 text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                            >
+                              <option value="landscape">Facebook Aspect: 16:9 Landscape</option>
+                              <option value="portrait">Facebook Aspect: 9:16 Portrait</option>
+                            </select>
+                          )}
+                        </div>
+
+                        <input
+                          value={publishTitle}
+                          onChange={(e) => setPublishTitle(e.target.value)}
+                          placeholder="PUBLISH TITLE"
+                          className="w-full h-10 px-3 bg-slate-950 border border-slate-700 text-xs uppercase tracking-wider placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                        />
+                        <textarea
+                          value={publishDescription}
+                          onChange={(e) => setPublishDescription(e.target.value)}
+                          placeholder="PUBLISH DESCRIPTION"
+                          className="w-full h-24 p-3 bg-slate-950 border border-slate-700 text-xs tracking-wide placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={handlePublish}
+                          disabled={!state.clipData || publishState === 'publishing'}
+                          className="h-10 px-4 border border-cyan-300 text-xs font-bold uppercase tracking-[0.16em] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-cyan-300/10"
+                        >
+                          {publishState === 'publishing' ? 'Publishing...' : 'Run Publish Workflow'}
+                        </button>
+
+                        {publishMessage && (
+                          <p
+                            className={`text-xs ${
+                              publishState === 'done'
+                                ? 'text-emerald-300'
+                                : publishState === 'error'
+                                  ? 'text-red-300'
+                                  : 'text-slate-300'
+                            }`}
+                          >
+                            {publishMessage}
+                          </p>
+                        )}
+                     </div>
                  </div>
 
                  {/* Right: Canvas Preview */}

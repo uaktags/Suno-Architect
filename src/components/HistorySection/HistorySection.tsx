@@ -5,6 +5,7 @@ import HistoryToolbar from './HistoryToolbar';
 import HistoryCard from './HistoryCard';
 import DetailsModal from './DetailsModal';
 import { stripMetaTags } from '../../utils/lyrics';
+import { downloadPlaylistZipFromCache } from '../../services/playlistDownloadService';
 
 interface HistorySectionProps {
   history: SunoClip[];
@@ -84,6 +85,8 @@ const HistorySection: React.FC<HistorySectionProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SunoClip[] | null>(null);
   const [limit, setLimit] = useState<number>(50);
+  const [playlistZipState, setPlaylistZipState] = useState<'idle' | 'packing' | 'done' | 'error'>('idle');
+  const [playlistZipMessage, setPlaylistZipMessage] = useState('');
 
   // Derive the active clip from history to ensure we always have the latest data
   const selectedClip = useMemo(() => {
@@ -157,6 +160,28 @@ const HistorySection: React.FC<HistorySectionProps> = ({
       setSearchResults(null);
   };
 
+  const handleDownloadPlaylistZip = async () => {
+    const input = searchText.trim();
+    const playlistId = extractSunoPlaylistId(input);
+    if (!playlistId) {
+      setPlaylistZipState('error');
+      setPlaylistZipMessage('Enter a valid Suno playlist URL/ID first.');
+      return;
+    }
+
+    setPlaylistZipState('packing');
+    setPlaylistZipMessage('Building playlist ZIP from local cache...');
+    try {
+      const result = await downloadPlaylistZipFromCache(playlistId);
+      setPlaylistZipState('done');
+      setPlaylistZipMessage(`ZIP created. Added ${result.added} tracks, skipped ${result.skipped} uncached tracks.`);
+    } catch (error) {
+      console.error('Playlist ZIP export failed', error);
+      setPlaylistZipState('error');
+      setPlaylistZipMessage('Playlist not available offline yet. Sync/download cache first.');
+    }
+  };
+
   const displayList = (searchText && searchResults) ? searchResults : history;
 
   return (
@@ -186,6 +211,33 @@ const HistorySection: React.FC<HistorySectionProps> = ({
           >
             {offlineMode ? 'Offline' : 'Online'}
           </button>
+        </div>
+
+        <div className="border border-slate-700 bg-black/40 px-3 py-3 rounded-md">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-300">Playlist ZIP (Offline Cache)</p>
+            <button
+              type="button"
+              onClick={handleDownloadPlaylistZip}
+              disabled={playlistZipState === 'packing'}
+              className="h-9 px-3 border border-amber-300 text-amber-200 text-[11px] font-bold uppercase tracking-[0.14em] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-amber-300/10"
+            >
+              {playlistZipState === 'packing' ? 'Packing ZIP...' : 'Download Playlist ZIP'}
+            </button>
+          </div>
+          {playlistZipMessage && (
+            <p
+              className={`mt-2 text-xs ${
+                playlistZipState === 'done'
+                  ? 'text-emerald-300'
+                  : playlistZipState === 'error'
+                    ? 'text-red-300'
+                    : 'text-slate-300'
+              }`}
+            >
+              {playlistZipMessage}
+            </p>
+          )}
         </div>
         
         {displayList.length === 0 ? (
