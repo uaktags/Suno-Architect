@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { VISUALIZER_FONTS } from '../../constants';
 import { Qt6Style } from '../../types';
 
 interface VisualizerSettingsProps {
+    savedPresets: Array<{ id: string; name: string; createdAt: string }>;
+    onSavePreset: (name: string) => void;
+    onApplySavedPreset: (id: string) => void;
+    onDeleteSavedPreset: (id: string) => void;
+    templatePreset: 'classic' | 'clean-lyrics' | 'corner-pulse' | 'cinematic-bars';
+    onTemplateChange: (val: 'classic' | 'clean-lyrics' | 'corner-pulse' | 'cinematic-bars') => void;
     fontFamily: string;
     setFontFamily: (val: string) => void;
     activeColor: string;
@@ -15,7 +21,25 @@ interface VisualizerSettingsProps {
     setVerticalOffset: (val: number) => void;
     inactiveOpacity: number;
     setInactiveOpacity: (val: number) => void;
-    visualMode: 'cover' | 'qt6';
+    mainVisualizerEnabled: boolean;
+    showTitle: boolean;
+    setShowTitle: (val: boolean) => void;
+    logoPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+    setLogoPosition: (val: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left') => void;
+    logoScale: number;
+    setLogoScale: (val: number) => void;
+    logoOpacity: number;
+    setLogoOpacity: (val: number) => void;
+    logoPulseEnabled: boolean;
+    setLogoPulseEnabled: (val: boolean) => void;
+    logoPulseStyle: 'expanding-circle' | 'radial-bars';
+    setLogoPulseStyle: (val: 'expanding-circle' | 'radial-bars') => void;
+    logoPulseGap: number;
+    setLogoPulseGap: (val: number) => void;
+    logoPulseScale: number;
+    setLogoPulseScale: (val: number) => void;
+    logoPulseSensitivity: number;
+    setLogoPulseSensitivity: (val: number) => void;
     qt6Style: Qt6Style;
     setQt6Style: (val: Qt6Style) => void;
     qt6BarCount: number;
@@ -26,16 +50,35 @@ interface VisualizerSettingsProps {
     setVideoBitrate: (val: number) => void;
     videoBitrateMode: 'constant' | 'variable';
     setVideoBitrateMode: (val: 'constant' | 'variable') => void;
+    fps: number;
+    setFps: (val: number) => void;
     onReset: () => void;
 }
 
 const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
+    savedPresets, onSavePreset, onApplySavedPreset, onDeleteSavedPreset,
+    templatePreset, onTemplateChange,
     fontFamily, setFontFamily, activeColor, setActiveColor, inactiveColor, setInactiveColor,
     smoothingFactor, setSmoothingFactor, verticalOffset, setVerticalOffset, inactiveOpacity, setInactiveOpacity,
-    visualMode, qt6Style, setQt6Style, qt6BarCount, setQt6BarCount, qt6Sensitivity, setQt6Sensitivity, 
+    mainVisualizerEnabled, showTitle, setShowTitle, logoPosition, setLogoPosition, logoScale, setLogoScale, logoOpacity, setLogoOpacity,
+    logoPulseEnabled, setLogoPulseEnabled, logoPulseStyle, setLogoPulseStyle, logoPulseGap, setLogoPulseGap, logoPulseScale, setLogoPulseScale, logoPulseSensitivity, setLogoPulseSensitivity,
+    qt6Style, setQt6Style, qt6BarCount, setQt6BarCount, qt6Sensitivity, setQt6Sensitivity, 
     videoBitrate, setVideoBitrate, videoBitrateMode, setVideoBitrateMode,
+    fps, setFps,
     onReset
 }) => {
+  const [newPresetName, setNewPresetName] = useState('');
+  const [selectedSavedPresetId, setSelectedSavedPresetId] = useState('');
+  const logoVisualizerMode: 'off' | 'expanding-circle' | 'radial-bars' =
+    logoPulseEnabled ? logoPulseStyle : 'off';
+
+  const handleSavePreset = () => {
+    const clean = newPresetName.trim();
+    if (!clean) return;
+    onSavePreset(clean);
+    setNewPresetName('');
+  };
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
@@ -43,6 +86,62 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
             <button onClick={onReset} className="text-xs text-purple-400 hover:text-purple-300">Reset to Default</button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="col-span-2 md:col-span-4 border border-slate-800 bg-slate-950/40 rounded-lg p-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <input
+                        type="text"
+                        value={newPresetName}
+                        onChange={(e) => setNewPresetName(e.target.value)}
+                        placeholder="Preset name"
+                        className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-100"
+                    />
+                    <button onClick={handleSavePreset} className="rounded px-2 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-semibold">
+                        Save Current Settings
+                    </button>
+                    <button onClick={() => selectedSavedPresetId && onApplySavedPreset(selectedSavedPresetId)} disabled={!selectedSavedPresetId} className="rounded px-2 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-semibold">
+                        Load Saved Preset
+                    </button>
+                </div>
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <select
+                        value={selectedSavedPresetId}
+                        onChange={(e) => setSelectedSavedPresetId(e.target.value)}
+                        className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200"
+                    >
+                        <option value="">Select saved preset...</option>
+                        {savedPresets.map((preset) => (
+                            <option key={preset.id} value={preset.id}>{preset.name}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={() => {
+                            if (!selectedSavedPresetId) return;
+                            onDeleteSavedPreset(selectedSavedPresetId);
+                            setSelectedSavedPresetId('');
+                        }}
+                        disabled={!selectedSavedPresetId}
+                        className="rounded px-2 py-1.5 text-xs bg-red-600/80 hover:bg-red-500 disabled:opacity-50 text-white font-semibold"
+                    >
+                        Delete Selected Preset
+                    </button>
+                    <div className="text-[10px] text-slate-500 flex items-center justify-start md:justify-end">
+                        {savedPresets.length} saved preset{savedPresets.length === 1 ? '' : 's'}
+                    </div>
+                </div>
+            </div>
+            <div className="col-span-2 md:col-span-2">
+                <label className="text-[10px] text-slate-500 block mb-1">Template Preset</label>
+                <select
+                    value={templatePreset}
+                    onChange={(e) => onTemplateChange(e.target.value as 'classic' | 'clean-lyrics' | 'corner-pulse' | 'cinematic-bars')}
+                    className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                >
+                    <option value="classic">Classic Cover Lyrics</option>
+                    <option value="clean-lyrics">Clean Lyric Frame</option>
+                    <option value="corner-pulse">Corner Pulse Logo</option>
+                    <option value="cinematic-bars">Cinematic Bars</option>
+                </select>
+            </div>
             <div className="col-span-2 md:col-span-1">
                 <label className="text-[10px] text-slate-500 block mb-1">Font Family</label>
                 <select 
@@ -134,10 +233,126 @@ const VisualizerSettings: React.FC<VisualizerSettingsProps> = ({
                     <option value="constant">Constant (CBR)</option>
                 </select>
             </div>
+            <div>
+                <label className="text-[10px] text-slate-500 block mb-1">FPS</label>
+                <select
+                    value={fps}
+                    onChange={(e) => setFps(Number(e.target.value))}
+                    className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                >
+                    <option value="30">30 FPS</option>
+                    <option value="60">60 FPS</option>
+                </select>
+            </div>
+            <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Show Song Title</label>
+                <button
+                    onClick={() => setShowTitle(!showTitle)}
+                    className={`w-full rounded p-1.5 text-xs border ${showTitle ? 'bg-cyan-600/20 border-cyan-500 text-cyan-200' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+                >
+                    {showTitle ? 'On' : 'Off'}
+                </button>
+            </div>
+            <div className="col-span-2 md:col-span-1">
+                <label className="text-[10px] text-slate-500 block mb-1">Logo Position</label>
+                <select
+                    value={logoPosition}
+                    onChange={(e) => setLogoPosition(e.target.value as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left')}
+                    className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                >
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="top-left">Top Left</option>
+                </select>
+            </div>
+            <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Logo Size</label>
+                <input
+                    type="range"
+                    min="0.08"
+                    max="0.45"
+                    step="0.01"
+                    value={logoScale}
+                    onChange={(e) => setLogoScale(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                />
+            </div>
+            <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Logo Opacity</label>
+                <input
+                    type="range"
+                    min="0.2"
+                    max="1"
+                    step="0.05"
+                    value={logoOpacity}
+                    onChange={(e) => setLogoOpacity(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                />
+            </div>
+            <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Logo Visualizer</label>
+                <select
+                    value={logoVisualizerMode}
+                    onChange={(e) => {
+                        const value = e.target.value as 'off' | 'expanding-circle' | 'radial-bars';
+                        if (value === 'off') {
+                            setLogoPulseEnabled(false);
+                            return;
+                        }
+                        setLogoPulseEnabled(true);
+                        setLogoPulseStyle(value);
+                    }}
+                    className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                >
+                    <option value="off">Off</option>
+                    <option value="expanding-circle">Expanding Circle</option>
+                    <option value="radial-bars">Radial Bars</option>
+                </select>
+            </div>
+            <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Pulse Size</label>
+                <input
+                    type="range"
+                    min="0.35"
+                    max="2.8"
+                    step="0.05"
+                    value={logoPulseScale}
+                    onChange={(e) => setLogoPulseScale(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                    disabled={!logoPulseEnabled}
+                />
+            </div>
+            <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Pulse Gap</label>
+                <input
+                    type="range"
+                    min="-40"
+                    max="80"
+                    step="1"
+                    value={logoPulseGap}
+                    onChange={(e) => setLogoPulseGap(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                    disabled={!logoPulseEnabled}
+                />
+            </div>
+            <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Pulse Sensitivity</label>
+                <input
+                    type="range"
+                    min="0.5"
+                    max="3"
+                    step="0.1"
+                    value={logoPulseSensitivity}
+                    onChange={(e) => setLogoPulseSensitivity(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                    disabled={!logoPulseEnabled}
+                />
+            </div>
         </div>
 
         {/* Qt6 Specific Controls */}
-        {visualMode === 'qt6' && (
+        {mainVisualizerEnabled && (
             <div className="mt-4 pt-4 border-t border-slate-800 animate-in fade-in">
                 <h3 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3">Qt6 Visualizer Controls</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

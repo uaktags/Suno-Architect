@@ -3,9 +3,51 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SunoClip, AlignedWord, Qt6Style } from '../../../types';
 import { getLyricAlignment, getSunoClip } from '../../../services/sunoApi';
 import { ASPECT_RATIOS } from '../../../constants';
-import { drawCover, drawQt6Visualizer, drawScrollingLyrics, formatTime } from '../../../utils/visualizer';
+import { drawCover, drawQt6Visualizer, drawScrollingLyrics, drawCornerPulseVisualizer, drawLogoExpandingCircle, drawLogoWatermark } from '../../../utils/visualizer';
 import { groupLyricsByLines, matchWordsToPrompt, groupWordsByTiming, stripMetaTags, getCleanAlignedWords } from '../../../utils/lyrics';
 import { performOfflineRender } from '../../../utils/offlineRender';
+
+type VisualMode = 'cover' | 'qt6' | 'hybrid';
+type VisualizerTemplate = 'classic' | 'clean-lyrics' | 'corner-pulse' | 'cinematic-bars';
+type LogoPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+type LogoPulseStyle = 'expanding-circle' | 'radial-bars';
+type VisualizerConfig = {
+    aspectRatio: keyof typeof ASPECT_RATIOS;
+    showBackgroundLayer: boolean;
+    mainVisualizerEnabled: boolean;
+    templatePreset: VisualizerTemplate;
+    activeColor: string;
+    inactiveColor: string;
+    inactiveOpacity: number;
+    fontFamily: string;
+    smoothingFactor: number;
+    verticalOffset: number;
+    qt6Style: Qt6Style;
+    qt6BarCount: number;
+    qt6Sensitivity: number;
+    logoPosition: LogoPosition;
+    logoScale: number;
+    logoOpacity: number;
+    logoPulseEnabled: boolean;
+    logoPulseStyle: LogoPulseStyle;
+    logoPulseGap: number;
+    logoPulseScale: number;
+    logoPulseSensitivity: number;
+    showTitle: boolean;
+    videoBitrate: number;
+    videoBitrateMode: 'constant' | 'variable';
+    audioBitrate: number;
+    fps: number;
+};
+type SavedVisualizerPreset = {
+    id: string;
+    name: string;
+    config: VisualizerConfig;
+    createdAt: string;
+};
+
+const SESSION_KEY = 'suno_architect_visualizer_session_v1';
+const PRESET_KEY = 'suno_architect_visualizer_saved_presets_v1';
 
 export const useVisualizer = (
     history: SunoClip[],
@@ -20,12 +62,25 @@ export const useVisualizer = (
     
     // Visual Settings
     const [aspectRatio, setAspectRatio] = useState<keyof typeof ASPECT_RATIOS>("16:9");
-    const [visualMode, setVisualMode] = useState<'cover' | 'qt6'>('cover');
+    const [showBackgroundLayer, setShowBackgroundLayer] = useState(true);
+    const [mainVisualizerEnabled, setMainVisualizerEnabled] = useState(false);
+    const [templatePreset, setTemplatePreset] = useState<VisualizerTemplate>('classic');
     const [customBg, setCustomBg] = useState<{ url: string, type: 'image' | 'video', name: string } | null>(null);
+    const [logoAsset, setLogoAsset] = useState<{ url: string, name: string } | null>(null);
+    const [logoPosition, setLogoPosition] = useState<LogoPosition>('bottom-right');
+    const [logoScale, setLogoScale] = useState(0.14);
+    const [logoOpacity, setLogoOpacity] = useState(0.9);
+    const [logoPulseEnabled, setLogoPulseEnabled] = useState(false);
+    const [logoPulseStyle, setLogoPulseStyle] = useState<LogoPulseStyle>('expanding-circle');
+    const [logoPulseGap, setLogoPulseGap] = useState(0);
+    const [logoPulseScale, setLogoPulseScale] = useState(1.35);
+    const [logoPulseSensitivity, setLogoPulseSensitivity] = useState(1.3);
+    const [showTitle, setShowTitle] = useState(true);
     const [customAudio, setCustomAudio] = useState<{ url: string, name: string } | null>(null);
     const [audioBitrate, setAudioBitrate] = useState(192000);
     const [videoBitrate, setVideoBitrate] = useState(5000000);
     const [videoBitrateMode, setVideoBitrateMode] = useState<'constant' | 'variable'>('variable');
+    const [fps, setFps] = useState(30);
     const [imgSrc, setImgSrc] = useState<string>('');
 
     // Update video bitrate based on resolution
@@ -56,7 +111,9 @@ export const useVisualizer = (
     const [alignment, setAlignment] = useState<AlignedWord[] | null>(null);
     const [lines, setLines] = useState<AlignedWord[][]>([]);
     const [lyricSource, setLyricSource] = useState(''); 
+    const [lyricDrafts, setLyricDrafts] = useState<Record<string, string>>({});
     const [applyStatus, setApplyStatus] = useState<'idle' | 'applied'>('idle');
+    const [savedPresets, setSavedPresets] = useState<SavedVisualizerPreset[]>([]);
     
     // Audio/Canvas/Media References
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -86,10 +143,86 @@ export const useVisualizer = (
 
     const renderStartTimeRef = useRef(0);
     const lastSpeedUpdateRef = useRef(0);
+    const hasRestoredSessionRef = useRef(false);
+    const lyricDraftsRef = useRef<Record<string, string>>({});
 
-    // Setup Audio Analysis for Qt6 Visualizer
     useEffect(() => {
-        if (visualMode === 'qt6' && audioRef.current && !sourceNodeRef.current) {
+        try {
+            const rawSession = localStorage.getItem(SESSION_KEY);
+            if (rawSession) {
+                const session = JSON.parse(rawSession) as Partial<{
+                    selectedClipId: string;
+                    manualId: string;
+                    lyricDrafts: Record<string, string>;
+                    config: Partial<VisualizerConfig>;
+                }>;
+                if (session.selectedClipId) setSelectedClipId(session.selectedClipId);
+                if (session.manualId) setManualId(session.manualId);
+                if (session.lyricDrafts) setLyricDrafts(session.lyricDrafts);
+                if (session.config) {
+                    if (session.config.aspectRatio) setAspectRatio(session.config.aspectRatio);
+                    if (typeof session.config.showBackgroundLayer === 'boolean') {
+                        setShowBackgroundLayer(session.config.showBackgroundLayer);
+                    }
+                    if (typeof session.config.mainVisualizerEnabled === 'boolean') {
+                        setMainVisualizerEnabled(session.config.mainVisualizerEnabled);
+                    }
+                    if ((session.config as any).visualMode && typeof session.config.showBackgroundLayer !== 'boolean' && typeof session.config.mainVisualizerEnabled !== 'boolean') {
+                        const legacyMode = (session.config as any).visualMode as VisualMode;
+                        setShowBackgroundLayer(legacyMode !== 'qt6');
+                        setMainVisualizerEnabled(legacyMode !== 'cover');
+                    }
+                    if (session.config.templatePreset) setTemplatePreset(session.config.templatePreset);
+                    if (session.config.activeColor) setActiveColor(session.config.activeColor);
+                    if (session.config.inactiveColor) setInactiveColor(session.config.inactiveColor);
+                    if (typeof session.config.inactiveOpacity === 'number') setInactiveOpacity(session.config.inactiveOpacity);
+                    if (session.config.fontFamily) setFontFamily(session.config.fontFamily);
+                    if (typeof session.config.smoothingFactor === 'number') setSmoothingFactor(session.config.smoothingFactor);
+                    if (typeof session.config.verticalOffset === 'number') setVerticalOffset(session.config.verticalOffset);
+                    if (session.config.qt6Style) setQt6Style(session.config.qt6Style);
+                    if (typeof session.config.qt6BarCount === 'number') setQt6BarCount(session.config.qt6BarCount);
+                    if (typeof session.config.qt6Sensitivity === 'number') setQt6Sensitivity(session.config.qt6Sensitivity);
+                    if (session.config.logoPosition) setLogoPosition(session.config.logoPosition);
+                    if (typeof session.config.logoScale === 'number') setLogoScale(session.config.logoScale);
+                    if (typeof session.config.logoOpacity === 'number') setLogoOpacity(session.config.logoOpacity);
+                    if (typeof session.config.logoPulseEnabled === 'boolean') setLogoPulseEnabled(session.config.logoPulseEnabled);
+                    if (session.config.logoPulseStyle) setLogoPulseStyle(session.config.logoPulseStyle);
+                    if (typeof session.config.logoPulseGap === 'number') setLogoPulseGap(session.config.logoPulseGap);
+                    if (typeof session.config.logoPulseScale === 'number') setLogoPulseScale(session.config.logoPulseScale);
+                    if (typeof session.config.logoPulseSensitivity === 'number') setLogoPulseSensitivity(session.config.logoPulseSensitivity);
+                    if (typeof session.config.showTitle === 'boolean') setShowTitle(session.config.showTitle);
+                    if (typeof session.config.videoBitrate === 'number') setVideoBitrate(session.config.videoBitrate);
+                    if (session.config.videoBitrateMode) setVideoBitrateMode(session.config.videoBitrateMode);
+                    if (typeof session.config.audioBitrate === 'number') setAudioBitrate(session.config.audioBitrate);
+                    if (typeof session.config.fps === 'number') setFps(session.config.fps);
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to restore visualizer session:', err);
+        }
+
+        try {
+            const rawPresets = localStorage.getItem(PRESET_KEY);
+            if (rawPresets) {
+                const parsed = JSON.parse(rawPresets) as SavedVisualizerPreset[];
+                if (Array.isArray(parsed)) {
+                    setSavedPresets(parsed);
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to restore saved presets:', err);
+        }
+        hasRestoredSessionRef.current = true;
+    }, []);
+
+    const currentVisualMode: VisualMode = showBackgroundLayer
+        ? (mainVisualizerEnabled ? 'hybrid' : 'cover')
+        : 'qt6';
+
+    // Setup Audio Analysis for Visualizer Modes
+    useEffect(() => {
+        const needsVisualizerData = mainVisualizerEnabled || logoPulseEnabled;
+        if (needsVisualizerData && audioRef.current && !sourceNodeRef.current) {
             try {
                 const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
                 if (!AudioContextClass) return;
@@ -111,7 +244,7 @@ export const useVisualizer = (
                 console.error("Audio Context Init Failed:", e);
             }
         }
-    }, [visualMode]);
+    }, [mainVisualizerEnabled, logoPulseEnabled, selectedClipId, customAudio]);
 
     // Handle Image Source Logic
     useEffect(() => {
@@ -186,6 +319,10 @@ export const useVisualizer = (
             if (!sourceText && currentClip.originalData?.lyricsAlone) {
                 sourceText = currentClip.originalData.lyricsAlone;
             }
+            const draftText = lyricDraftsRef.current[currentClip.id];
+            if (draftText && draftText.trim()) {
+                sourceText = draftText;
+            }
             setLyricSource(sourceText);
 
             let align = currentClip.alignmentData;
@@ -234,7 +371,15 @@ export const useVisualizer = (
                 type = 'video';
             }
             setCustomBg({ url, type, name: file.name });
-            setVisualMode('cover'); 
+            setShowBackgroundLayer(true);
+        }
+    }, []);
+
+    const handleLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            setLogoAsset({ url, name: file.name });
         }
     }, []);
 
@@ -257,6 +402,212 @@ export const useVisualizer = (
         setApplyStatus('applied');
         setTimeout(() => setApplyStatus('idle'), 2000);
     }, [alignment, lyricSource]);
+
+    const getCurrentConfig = useCallback((): VisualizerConfig => ({
+        aspectRatio,
+        showBackgroundLayer,
+        mainVisualizerEnabled,
+        templatePreset,
+        activeColor,
+        inactiveColor,
+        inactiveOpacity,
+        fontFamily,
+        smoothingFactor,
+        verticalOffset,
+        qt6Style,
+        qt6BarCount,
+        qt6Sensitivity,
+        logoPosition,
+        logoScale,
+        logoOpacity,
+        logoPulseEnabled,
+        logoPulseStyle,
+        logoPulseGap,
+        logoPulseScale,
+        logoPulseSensitivity,
+        showTitle,
+        videoBitrate,
+        videoBitrateMode,
+        audioBitrate,
+        fps
+    }), [
+        aspectRatio, showBackgroundLayer, mainVisualizerEnabled, templatePreset, activeColor, inactiveColor, inactiveOpacity, fontFamily,
+        smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity,
+        logoPosition, logoScale, logoOpacity, logoPulseEnabled, logoPulseStyle, logoPulseGap, logoPulseScale, logoPulseSensitivity, showTitle,
+        videoBitrate, videoBitrateMode, audioBitrate, fps
+    ]);
+
+    const applyConfig = useCallback((config: any) => {
+        if (config.aspectRatio) setAspectRatio(config.aspectRatio);
+        if (typeof config.showBackgroundLayer === 'boolean') setShowBackgroundLayer(config.showBackgroundLayer);
+        if (typeof config.mainVisualizerEnabled === 'boolean') setMainVisualizerEnabled(config.mainVisualizerEnabled);
+        if (config.visualMode && typeof config.showBackgroundLayer !== 'boolean' && typeof config.mainVisualizerEnabled !== 'boolean') {
+            setShowBackgroundLayer(config.visualMode !== 'qt6');
+            setMainVisualizerEnabled(config.visualMode !== 'cover');
+        }
+        if (config.templatePreset) setTemplatePreset(config.templatePreset);
+        if (config.activeColor) setActiveColor(config.activeColor);
+        if (config.inactiveColor) setInactiveColor(config.inactiveColor);
+        if (typeof config.inactiveOpacity === 'number') setInactiveOpacity(config.inactiveOpacity);
+        if (config.fontFamily) setFontFamily(config.fontFamily);
+        if (typeof config.smoothingFactor === 'number') setSmoothingFactor(config.smoothingFactor);
+        if (typeof config.verticalOffset === 'number') setVerticalOffset(config.verticalOffset);
+        if (config.qt6Style) setQt6Style(config.qt6Style);
+        if (typeof config.qt6BarCount === 'number') setQt6BarCount(config.qt6BarCount);
+        if (typeof config.qt6Sensitivity === 'number') setQt6Sensitivity(config.qt6Sensitivity);
+        if (config.logoPosition) setLogoPosition(config.logoPosition);
+        if (typeof config.logoScale === 'number') setLogoScale(config.logoScale);
+        if (typeof config.logoOpacity === 'number') setLogoOpacity(config.logoOpacity);
+        if (typeof config.logoPulseEnabled === 'boolean') setLogoPulseEnabled(config.logoPulseEnabled);
+        if (config.logoPulseStyle) setLogoPulseStyle(config.logoPulseStyle);
+        if (typeof config.logoPulseGap === 'number') setLogoPulseGap(config.logoPulseGap);
+        if (typeof config.logoPulseScale === 'number') setLogoPulseScale(config.logoPulseScale);
+        if (typeof config.logoPulseSensitivity === 'number') setLogoPulseSensitivity(config.logoPulseSensitivity);
+        if (typeof config.showTitle === 'boolean') setShowTitle(config.showTitle);
+        if (typeof config.videoBitrate === 'number') setVideoBitrate(config.videoBitrate);
+        if (config.videoBitrateMode) setVideoBitrateMode(config.videoBitrateMode);
+        if (typeof config.audioBitrate === 'number') setAudioBitrate(config.audioBitrate);
+        if (typeof config.fps === 'number') setFps(config.fps);
+    }, []);
+
+    const saveCurrentPreset = useCallback((name: string) => {
+        const cleanName = name.trim();
+        if (!cleanName) return;
+        const preset: SavedVisualizerPreset = {
+            id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            name: cleanName,
+            config: getCurrentConfig(),
+            createdAt: new Date().toISOString()
+        };
+        setSavedPresets(prev => [preset, ...prev]);
+    }, [getCurrentConfig]);
+
+    const applySavedPreset = useCallback((id: string) => {
+        const preset = savedPresets.find(p => p.id === id);
+        if (!preset) return;
+        applyConfig(preset.config);
+    }, [savedPresets, applyConfig]);
+
+    const deleteSavedPreset = useCallback((id: string) => {
+        setSavedPresets(prev => prev.filter(p => p.id !== id));
+    }, []);
+
+    const applyTemplatePreset = useCallback((preset: VisualizerTemplate) => {
+        setTemplatePreset(preset);
+        if (preset === 'classic') {
+            setShowBackgroundLayer(true);
+            setMainVisualizerEnabled(false);
+            setQt6Style('wave');
+            setQt6BarCount(64);
+            setQt6Sensitivity(1);
+            setVerticalOffset(0);
+            setActiveColor('#e879f9');
+            setInactiveColor('#ffffff');
+            setInactiveOpacity(0.3);
+            setShowTitle(true);
+            setLogoPosition('bottom-right');
+            setLogoScale(0.14);
+            setLogoOpacity(0.9);
+            setLogoPulseEnabled(false);
+            setLogoPulseStyle('expanding-circle');
+            setLogoPulseGap(0);
+            setLogoPulseScale(1.35);
+            setLogoPulseSensitivity(1.3);
+        } else if (preset === 'clean-lyrics') {
+            setShowBackgroundLayer(true);
+            setMainVisualizerEnabled(true);
+            setQt6Style('bars');
+            setQt6BarCount(32);
+            setQt6Sensitivity(1.2);
+            setVerticalOffset(0.12);
+            setActiveColor('#f8fafc');
+            setInactiveColor('#cbd5e1');
+            setInactiveOpacity(0.28);
+            setShowTitle(true);
+            setLogoPosition('bottom-right');
+            setLogoScale(0.12);
+            setLogoOpacity(0.82);
+            setLogoPulseEnabled(false);
+            setLogoPulseStyle('expanding-circle');
+            setLogoPulseGap(0);
+            setLogoPulseScale(1.3);
+            setLogoPulseSensitivity(1.15);
+        } else if (preset === 'corner-pulse') {
+            setShowBackgroundLayer(true);
+            setMainVisualizerEnabled(true);
+            setQt6Style('circle');
+            setQt6BarCount(64);
+            setQt6Sensitivity(1.4);
+            setVerticalOffset(0.1);
+            setActiveColor('#22d3ee');
+            setInactiveColor('#ffffff');
+            setInactiveOpacity(0.32);
+            setShowTitle(true);
+            setLogoPosition('bottom-right');
+            setLogoScale(0.14);
+            setLogoOpacity(0.95);
+            setLogoPulseEnabled(true);
+            setLogoPulseStyle('radial-bars');
+            setLogoPulseGap(0);
+            setLogoPulseScale(1.45);
+            setLogoPulseSensitivity(1.55);
+        } else if (preset === 'cinematic-bars') {
+            setShowBackgroundLayer(true);
+            setMainVisualizerEnabled(true);
+            setQt6Style('bars');
+            setQt6BarCount(128);
+            setQt6Sensitivity(1.5);
+            setVerticalOffset(0.06);
+            setActiveColor('#f97316');
+            setInactiveColor('#f8fafc');
+            setInactiveOpacity(0.25);
+            setShowTitle(true);
+            setLogoPosition('bottom-left');
+            setLogoScale(0.11);
+            setLogoOpacity(0.84);
+            setLogoPulseEnabled(true);
+            setLogoPulseStyle('expanding-circle');
+            setLogoPulseGap(0);
+            setLogoPulseScale(1.25);
+            setLogoPulseSensitivity(1.2);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!selectedClipId) return;
+        setLyricDrafts(prev => {
+            if (prev[selectedClipId] === lyricSource) return prev;
+            return { ...prev, [selectedClipId]: lyricSource };
+        });
+    }, [selectedClipId, lyricSource]);
+
+    useEffect(() => {
+        lyricDraftsRef.current = lyricDrafts;
+    }, [lyricDrafts]);
+
+    useEffect(() => {
+        if (!hasRestoredSessionRef.current) return;
+        const session = {
+            selectedClipId,
+            manualId,
+            lyricDrafts,
+            config: getCurrentConfig()
+        };
+        try {
+            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        } catch (err) {
+            console.warn('Failed to persist visualizer session:', err);
+        }
+    }, [selectedClipId, manualId, lyricDrafts, getCurrentConfig]);
+
+    useEffect(() => {
+        if (!hasRestoredSessionRef.current) return;
+        try {
+            localStorage.setItem(PRESET_KEY, JSON.stringify(savedPresets));
+        } catch (err) {
+            console.warn('Failed to persist saved presets:', err);
+        }
+    }, [savedPresets]);
 
     const handleSmartGroup = async () => {
         if (!clipData || !alignment) return;
@@ -312,12 +663,43 @@ export const useVisualizer = (
     }, []);
 
     // --- DRAWING LOGIC ---
+    const resolveVisualizerData = (data?: Uint8Array | Float32Array) => {
+        if (data) return data;
+        if (!analyserRef.current || !dataArrayRef.current) return null;
+
+        if (qt6Style === 'wave') {
+            analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+        } else {
+            analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+        }
+        return dataArrayRef.current;
+    };
+
+    const getLogoAnchor = (width: number, height: number) => {
+        const margin = Math.max(20, Math.round(Math.min(width, height) * 0.04));
+        const logoSizePx = Math.max(40, Math.round(Math.min(width, height) * logoScale));
+        if (logoPosition === 'bottom-left') {
+            return { x: margin, y: height - margin - logoSizePx, size: logoSizePx };
+        }
+        if (logoPosition === 'top-left') {
+            return { x: margin, y: margin, size: logoSizePx };
+        }
+        if (logoPosition === 'top-right') {
+            return { x: width - margin - logoSizePx, y: margin, size: logoSizePx };
+        }
+        return { x: width - margin - logoSizePx, y: height - margin - logoSizePx, size: logoSizePx };
+    };
+
     const renderFrame = (ctx: CanvasRenderingContext2D, width: number, height: number, time: number, data?: Uint8Array | Float32Array) => {
         // 1. Background Layer
         ctx.fillStyle = '#1e1e1e';
         ctx.fillRect(0, 0, width, height);
 
-        if (visualMode === 'cover') {
+        const drawCoverLayer = showBackgroundLayer;
+        const drawVisualizerLayer = mainVisualizerEnabled || logoPulseEnabled;
+        const logoImg = document.getElementById('custom-logo-img') as HTMLImageElement | null;
+
+        if (drawCoverLayer) {
             let drawn = false;
             if (customBg) {
                 if (customBg.type === 'video' && customVideoRef.current) {
@@ -337,28 +719,45 @@ export const useVisualizer = (
                     drawCover(ctx, bgImg, width, height);
                 }
             }
-            // Overlay Dimmer
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillStyle = drawVisualizerLayer ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.7)';
             ctx.fillRect(0, 0, width, height);
-        } else if (visualMode === 'qt6') {
-            // Qt6 Visualizer Background (Dark Gradient)
+        } else {
             const grad = ctx.createLinearGradient(0, 0, 0, height);
             grad.addColorStop(0, '#0f172a');
             grad.addColorStop(1, '#000000');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, width, height);
+        }
 
-            // Render Visualizer
-            if (data) {
-                drawQt6Visualizer(ctx, width, height, data, qt6Style, { activeColor, qt6Sensitivity, qt6BarCount });
-            } else if (analyserRef.current && dataArrayRef.current) {
-                // Realtime extraction
-                if (qt6Style === 'wave') {
-                    analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
-                    drawQt6Visualizer(ctx, width, height, dataArrayRef.current, 'wave', { activeColor, qt6Sensitivity, qt6BarCount });
-                } else {
-                    analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-                    drawQt6Visualizer(ctx, width, height, dataArrayRef.current, qt6Style, { activeColor, qt6Sensitivity, qt6BarCount });
+        if (drawVisualizerLayer) {
+            const visualData = resolveVisualizerData(data);
+            if (visualData) {
+                if (mainVisualizerEnabled) {
+                    drawQt6Visualizer(ctx, width, height, visualData, qt6Style, { activeColor, qt6Sensitivity, qt6BarCount });
+                }
+                if (logoPulseEnabled && logoAsset && logoImg?.complete) {
+                    const anchor = getLogoAnchor(width, height);
+                    const logoEdgeRadius = (anchor.size * Math.SQRT2) / 2;
+                    const pulseRadius = Math.max(8, (logoEdgeRadius + logoPulseGap) * logoPulseScale);
+                    const centerX = anchor.x + (anchor.size / 2);
+                    const centerY = anchor.y + (anchor.size / 2);
+                    if (logoPulseStyle === 'radial-bars') {
+                        drawCornerPulseVisualizer(ctx, visualData, {
+                            activeColor,
+                            qt6Sensitivity: logoPulseSensitivity,
+                            centerX,
+                            centerY,
+                            radius: pulseRadius * 0.55
+                        });
+                    } else {
+                        drawLogoExpandingCircle(ctx, visualData, {
+                            activeColor,
+                            sensitivity: logoPulseSensitivity,
+                            centerX,
+                            centerY,
+                            radius: pulseRadius * 0.5
+                        });
+                    }
                 }
             }
         }
@@ -373,6 +772,22 @@ export const useVisualizer = (
             verticalOffset,
             aspectRatio
         });
+
+        if (showTitle && clipData?.title) {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.font = `700 ${Math.max(20, Math.round(width * 0.022))}px ${fontFamily}`;
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.shadowColor = 'rgba(0,0,0,0.7)';
+            ctx.shadowBlur = 10;
+            ctx.fillText(clipData.title, width / 2, Math.max(18, Math.round(height * 0.05)));
+            ctx.shadowBlur = 0;
+        }
+
+        if (logoAsset && logoImg && logoImg.complete) {
+            const anchor = getLogoAnchor(width, height);
+            drawLogoWatermark(ctx, logoImg, anchor.x, anchor.y, anchor.size, logoOpacity);
+        }
 
         // Title & Progress Bar
         if (clipData && duration) {
@@ -398,7 +813,7 @@ export const useVisualizer = (
             setProgress(audioRef.current.currentTime);
             requestRef.current = requestAnimationFrame(animate);
         }
-    }, [isRendering, customBg, aspectRatio, clipData, duration, activeColor, inactiveColor, inactiveOpacity, fontFamily, smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity, visualMode, lines]);
+    }, [isRendering, customBg, aspectRatio, clipData, duration, activeColor, inactiveColor, inactiveOpacity, fontFamily, smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity, showBackgroundLayer, mainVisualizerEnabled, lines, logoAsset, logoPosition, logoScale, logoOpacity, logoPulseEnabled, logoPulseStyle, logoPulseGap, logoPulseScale, logoPulseSensitivity, showTitle]);
 
     useEffect(() => {
         if (selectedClipId && !isRendering) {
@@ -437,8 +852,9 @@ export const useVisualizer = (
                     bitrate: audioBitrate,
                     videoBitrate,
                     videoBitrateMode,
+                    fps,
                     title: clipData.title || "video",
-                    visualMode,
+                    visualMode: currentVisualMode,
                     qt6Style,
                     customVideo: customVideoRef.current,
                     customBgType: customBg?.type
@@ -475,15 +891,17 @@ export const useVisualizer = (
 
     return {
         state: {
-            selectedClipId, manualId, aspectRatio, visualMode, customBg, customAudio,
-            audioBitrate, videoBitrate, videoBitrateMode, imgSrc, activeColor, inactiveColor, inactiveOpacity, fontFamily,
+            selectedClipId, manualId, aspectRatio, showBackgroundLayer, mainVisualizerEnabled, visualMode: currentVisualMode, customBg, customAudio,
+            templatePreset, logoAsset, logoPosition, logoScale, logoOpacity, logoPulseEnabled, logoPulseStyle, logoPulseGap, logoPulseScale, logoPulseSensitivity, showTitle,
+            audioBitrate, videoBitrate, videoBitrateMode, fps, imgSrc, activeColor, inactiveColor, inactiveOpacity, fontFamily,
             smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity,
-            clipData, alignment, lines, lyricSource, applyStatus,
+            clipData, alignment, lines, lyricSource, applyStatus, savedPresets,
             isRendering, renderProgress, renderError, renderSpeed, isPreparing, isGrouping, progress, duration, isPlaying
         },
         setters: {
-            setSelectedClipId, setManualId, setAspectRatio, setVisualMode, setCustomBg, setCustomAudio,
-            setAudioBitrate, setVideoBitrate, setVideoBitrateMode, setImgSrc, setActiveColor, setInactiveColor, setInactiveOpacity, setFontFamily,
+            setSelectedClipId, setManualId, setAspectRatio, setShowBackgroundLayer, setMainVisualizerEnabled, setCustomBg, setCustomAudio,
+            setTemplatePreset, setLogoAsset, setLogoPosition, setLogoScale, setLogoOpacity, setLogoPulseEnabled, setLogoPulseStyle, setLogoPulseGap, setLogoPulseScale, setLogoPulseSensitivity, setShowTitle,
+            setAudioBitrate, setVideoBitrate, setVideoBitrateMode, setFps, setImgSrc, setActiveColor, setInactiveColor, setInactiveOpacity, setFontFamily,
             setSmoothingFactor, setVerticalOffset, setQt6Style, setQt6BarCount, setQt6Sensitivity,
             setLyricSource, setIsPlaying
         },
@@ -491,8 +909,9 @@ export const useVisualizer = (
             canvasRef, audioRef, customVideoRef
         },
         handlers: {
-            handleManualLoad, handleFileUpload, handleAudioUpload, handleApplyLyrics,
-            handleSmartGroup, handleSeek, togglePlay, startOfflineRender, handleImageError, setDuration
+            handleManualLoad, handleFileUpload, handleAudioUpload, handleLogoUpload, handleApplyLyrics, applyTemplatePreset,
+            handleSmartGroup, handleSeek, togglePlay, startOfflineRender, handleImageError, setDuration,
+            saveCurrentPreset, applySavedPreset, deleteSavedPreset
         }
     };
 };

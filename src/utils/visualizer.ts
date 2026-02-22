@@ -31,6 +31,20 @@ export const drawCover = (ctx: CanvasRenderingContext2D, img: CanvasImageSource 
     ctx.drawImage(img, startX, startY, drawW, drawH);
 };
 
+export const drawLogoWatermark = (
+    ctx: CanvasRenderingContext2D,
+    logo: CanvasImageSource | HTMLImageElement,
+    x: number,
+    y: number,
+    size: number,
+    opacity: number
+) => {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0.1, Math.min(1, opacity));
+    ctx.drawImage(logo, x, y, size, size);
+    ctx.restore();
+};
+
 const drawRadialBar = (ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, h: number, angle: number) => {
     const x1 = cx + Math.cos(angle) * r;
     const y1 = cy + Math.sin(angle) * r;
@@ -41,6 +55,111 @@ const drawRadialBar = (ctx: CanvasRenderingContext2D, cx: number, cy: number, r:
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
+};
+
+export const drawCornerPulseVisualizer = (
+    ctx: CanvasRenderingContext2D,
+    data: Uint8Array | Float32Array,
+    settings: {
+        activeColor: string;
+        qt6Sensitivity: number;
+        centerX: number;
+        centerY: number;
+        radius: number;
+    }
+) => {
+    const { activeColor, qt6Sensitivity, centerX, centerY, radius } = settings;
+    const bufferLength = data.length;
+    const usefulLimit = Math.floor(bufferLength * 0.5);
+    const totalBars = 56;
+    const halfBars = totalBars / 2;
+    const step = Math.max(1, Math.floor((usefulLimit - 2) / halfBars));
+    const maxExtrude = radius * 0.85;
+
+    let bassSum = 0;
+    for(let k = 2; k < 16; k++) bassSum += (data[k] as number);
+    const bassEnergy = (bassSum / 14 / 255.0) * qt6Sensitivity;
+    const currentRadius = radius + (bassEnergy * 10);
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = activeColor;
+
+    for(let i = 0; i < halfBars; i++) {
+        let sum = 0;
+        let count = 0;
+        for(let j = 0; j < step; j++) {
+            const idx = 2 + (i * step) + j;
+            if(idx < usefulLimit) {
+                sum += (data[idx] as number);
+                count++;
+            }
+        }
+        const avg = count > 0 ? (sum / count) : 0;
+        const val = (avg / 255.0) * qt6Sensitivity;
+        const barH = Math.max(2, Math.pow(val, 1.7) * maxExtrude);
+
+        const angleStep = Math.PI / halfBars;
+        const angleOffset = i * angleStep;
+        drawRadialBar(ctx, centerX, centerY, currentRadius, barH, -Math.PI / 2 + angleOffset);
+        if (i > 0) drawRadialBar(ctx, centerX, centerY, currentRadius, barH, -Math.PI / 2 - angleOffset);
+    }
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, currentRadius - 4, 0, Math.PI * 2);
+    ctx.fillStyle = hexToRgba(activeColor, 0.12 + (bassEnergy * 0.18));
+    ctx.fill();
+    ctx.strokeStyle = hexToRgba(activeColor, 0.45);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+};
+
+export const drawLogoExpandingCircle = (
+    ctx: CanvasRenderingContext2D,
+    data: Uint8Array | Float32Array,
+    settings: {
+        activeColor: string;
+        sensitivity: number;
+        centerX: number;
+        centerY: number;
+        radius: number;
+    }
+) => {
+    const { activeColor, sensitivity, centerX, centerY, radius } = settings;
+    let bassSum = 0;
+    let bins = 0;
+    for (let i = 2; i < 24 && i < data.length; i++) {
+        bassSum += (data[i] as number);
+        bins++;
+    }
+    const bass = bins > 0 ? bassSum / bins : 0;
+    const energy = (bass / 255) * Math.max(0.3, sensitivity);
+    const pulse = radius * (0.25 + (energy * 0.7));
+
+    ctx.save();
+    const halo = ctx.createRadialGradient(
+        centerX,
+        centerY,
+        Math.max(2, radius * 0.06),
+        centerX,
+        centerY,
+        radius + pulse
+    );
+    halo.addColorStop(0, hexToRgba(activeColor, 0.18 + (energy * 0.25)));
+    halo.addColorStop(1, hexToRgba(activeColor, 0));
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius + pulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = hexToRgba(activeColor, 0.65);
+    ctx.lineWidth = Math.max(2, radius * 0.06);
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius + (energy * radius * 0.6), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
 };
 
 export const drawQt6Visualizer = (

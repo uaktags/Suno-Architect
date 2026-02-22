@@ -57,8 +57,10 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                      />
 
                      <MediaCard 
-                        visualMode={state.visualMode} setVisualMode={setters.setVisualMode}
+                        showBackgroundLayer={state.showBackgroundLayer} setShowBackgroundLayer={setters.setShowBackgroundLayer}
+                        mainVisualizerEnabled={state.mainVisualizerEnabled} setMainVisualizerEnabled={setters.setMainVisualizerEnabled}
                         customBg={state.customBg} setCustomBg={setters.setCustomBg}
+                        logoAsset={state.logoAsset} setLogoAsset={setters.setLogoAsset}
                         customAudio={state.customAudio} setCustomAudio={setters.setCustomAudio}
                         imgSrc={state.imgSrc}
                         qt6Style={state.qt6Style}
@@ -66,6 +68,7 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                         videoRef={refs.customVideoRef}
                         onFileUpload={handlers.handleFileUpload}
                         onAudioUpload={handlers.handleAudioUpload}
+                        onLogoUpload={handlers.handleLogoUpload}
                         handleImageError={handlers.handleImageError}
                      />
                      
@@ -114,13 +117,28 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                      />
                      
                      <VisualizerSettings 
+                        savedPresets={state.savedPresets}
+                        onSavePreset={handlers.saveCurrentPreset}
+                        onApplySavedPreset={handlers.applySavedPreset}
+                        onDeleteSavedPreset={handlers.deleteSavedPreset}
+                        templatePreset={state.templatePreset}
+                        onTemplateChange={handlers.applyTemplatePreset}
                         fontFamily={state.fontFamily} setFontFamily={setters.setFontFamily}
                         activeColor={state.activeColor} setActiveColor={setters.setActiveColor}
                         inactiveColor={state.inactiveColor} setInactiveColor={setters.setInactiveColor}
                         smoothingFactor={state.smoothingFactor} setSmoothingFactor={setters.setSmoothingFactor}
                         verticalOffset={state.verticalOffset} setVerticalOffset={setters.setVerticalOffset}
                         inactiveOpacity={state.inactiveOpacity} setInactiveOpacity={setters.setInactiveOpacity}
-                        visualMode={state.visualMode}
+                        mainVisualizerEnabled={state.mainVisualizerEnabled}
+                        showTitle={state.showTitle} setShowTitle={setters.setShowTitle}
+                        logoPosition={state.logoPosition} setLogoPosition={setters.setLogoPosition}
+                        logoScale={state.logoScale} setLogoScale={setters.setLogoScale}
+                        logoOpacity={state.logoOpacity} setLogoOpacity={setters.setLogoOpacity}
+                        logoPulseEnabled={state.logoPulseEnabled} setLogoPulseEnabled={setters.setLogoPulseEnabled}
+                        logoPulseStyle={state.logoPulseStyle} setLogoPulseStyle={setters.setLogoPulseStyle}
+                        logoPulseGap={state.logoPulseGap} setLogoPulseGap={setters.setLogoPulseGap}
+                        logoPulseScale={state.logoPulseScale} setLogoPulseScale={setters.setLogoPulseScale}
+                        logoPulseSensitivity={state.logoPulseSensitivity} setLogoPulseSensitivity={setters.setLogoPulseSensitivity}
                         qt6Style={state.qt6Style} setQt6Style={setters.setQt6Style}
                         qt6BarCount={state.qt6BarCount} setQt6BarCount={setters.setQt6BarCount}
                         qt6Sensitivity={state.qt6Sensitivity} setQt6Sensitivity={setters.setQt6Sensitivity}
@@ -128,18 +146,30 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                         videoBitrateMode={state.videoBitrateMode} setVideoBitrateMode={setters.setVideoBitrateMode}
                         fps={state.fps} setFps={setters.setFps}
                         onReset={() => {
+                            handlers.applyTemplatePreset('classic');
                             setters.setActiveColor('#e879f9');
                             setters.setInactiveColor('#ffffff');
                             setters.setInactiveOpacity(0.3);
                             setters.setFontFamily('Inter, sans-serif');
                             setters.setSmoothingFactor(0.1);
                             setters.setVerticalOffset(0);
+                            setters.setShowBackgroundLayer(true);
+                            setters.setMainVisualizerEnabled(false);
                             setters.setQt6Style('wave');
                             setters.setQt6BarCount(64);
                             setters.setQt6Sensitivity(1.0);
                             setters.setVideoBitrate(5000000);
                             setters.setVideoBitrateMode('variable');
                             setters.setFps(30);
+                            setters.setShowTitle(true);
+                            setters.setLogoPosition('bottom-right');
+                            setters.setLogoScale(0.14);
+                            setters.setLogoOpacity(0.9);
+                            setters.setLogoPulseEnabled(false);
+                            setters.setLogoPulseStyle('expanding-circle');
+                            setters.setLogoPulseGap(0);
+                            setters.setLogoPulseScale(1.35);
+                            setters.setLogoPulseSensitivity(1.3);
                         }}
                      />
 

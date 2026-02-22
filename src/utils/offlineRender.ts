@@ -15,7 +15,7 @@ export const performOfflineRender = async (
         videoBitrateMode: 'constant' | 'variable';
         fps: number;
         title: string;
-        visualMode: 'cover' | 'qt6';
+        visualMode: 'cover' | 'qt6' | 'hybrid';
         qt6Style: Qt6Style;
         customVideo?: HTMLVideoElement | null;
         customBgType?: 'image' | 'video';
@@ -123,7 +123,7 @@ export const performOfflineRender = async (
                     await new Promise<void>(res => { resolvePushback = res; });
                 }
 
-                if (config.visualMode === 'cover' && config.customBgType === 'video' && config.customVideo) {
+                if (config.visualMode !== 'qt6' && config.customBgType === 'video' && config.customVideo) {
                     config.customVideo.currentTime = t % config.customVideo.duration;
                 }
 

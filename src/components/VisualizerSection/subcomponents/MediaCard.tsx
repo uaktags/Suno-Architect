@@ -4,10 +4,14 @@ import { ASPECT_RATIOS } from '../../../constants';
 import { Qt6Style } from '../../../types';
 
 interface MediaCardProps {
-  visualMode: 'cover' | 'qt6';
-  setVisualMode: (mode: 'cover' | 'qt6') => void;
+  showBackgroundLayer: boolean;
+  setShowBackgroundLayer: (val: boolean) => void;
+  mainVisualizerEnabled: boolean;
+  setMainVisualizerEnabled: (val: boolean) => void;
   customBg: { url: string, type: 'image' | 'video', name: string } | null;
   setCustomBg: (bg: { url: string, type: 'image' | 'video', name: string } | null) => void;
+  logoAsset: { url: string, name: string } | null;
+  setLogoAsset: (logo: { url: string, name: string } | null) => void;
   customAudio: { url: string, name: string } | null;
   setCustomAudio: (audio: { url: string, name: string } | null) => void;
   imgSrc: string;
@@ -17,24 +21,27 @@ interface MediaCardProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onAudioUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleImageError: () => void;
 }
 
 const MediaCard: React.FC<MediaCardProps> = ({
-  visualMode, setVisualMode,
+  showBackgroundLayer, setShowBackgroundLayer,
+  mainVisualizerEnabled, setMainVisualizerEnabled,
   customBg, setCustomBg,
+  logoAsset, setLogoAsset,
   customAudio, setCustomAudio,
   imgSrc, qt6Style,
   aspectRatio, setAspectRatio,
   videoRef,
-  onFileUpload, onAudioUpload,
+  onFileUpload, onAudioUpload, onLogoUpload,
   handleImageError
 }) => {
   return (
     <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-lg p-4 space-y-4">
       {/* Cover Art / Visualizer Preview */}
       <div className="relative group rounded-lg overflow-hidden border border-slate-700/50">
-          {visualMode === 'cover' ? (
+          {showBackgroundLayer ? (
             <>
                 <img 
                     id="source-img"
@@ -67,7 +74,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
                     </div>
                 )}
             </>
-          ) : (
+          ) : mainVisualizerEnabled ? (
             <div className="w-full h-32 bg-gradient-to-b from-slate-800 to-black flex flex-col items-center justify-center border-b border-slate-700 gap-2">
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Qt6 Style: {qt6Style}</span>
                 <div className="flex gap-2">
@@ -76,6 +83,10 @@ const MediaCard: React.FC<MediaCardProps> = ({
                     <div className={`w-2 h-6 rounded-full ${qt6Style === 'circle' ? 'bg-purple-500' : 'bg-slate-700'}`}></div>
                     <div className={`w-2 h-6 rounded-full ${qt6Style === 'circular-wave' ? 'bg-purple-500' : 'bg-slate-700'}`}></div>
                 </div>
+            </div>
+          ) : (
+            <div className="w-full h-32 bg-black/70 flex items-center justify-center border-b border-slate-700">
+              <span className="text-xs text-slate-400">No Background / No Main Visualizer</span>
             </div>
           )}
           
@@ -116,27 +127,27 @@ const MediaCard: React.FC<MediaCardProps> = ({
                   </select>
               </div>
 
-              {/* Visual Mode Selector */}
+              {/* Layer Toggles */}
               <div>
-                  <label className="text-xs text-slate-500 block mb-1">Background Mode</label>
-                  <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-700">
-                      <button 
-                        onClick={() => setVisualMode('cover')}
-                        className={`flex-1 text-[10px] font-bold py-1.5 rounded transition-colors ${visualMode === 'cover' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
+                  <label className="text-xs text-slate-500 block mb-1">Layers</label>
+                  <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setShowBackgroundLayer(!showBackgroundLayer)}
+                        className={`text-[10px] font-bold py-2 rounded transition-colors border ${showBackgroundLayer ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
                       >
-                          Cover / Custom
+                        Background Media
                       </button>
-                      <button 
-                        onClick={() => setVisualMode('qt6')}
-                        className={`flex-1 text-[10px] font-bold py-1.5 rounded transition-colors ${visualMode === 'qt6' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
+                      <button
+                        onClick={() => setMainVisualizerEnabled(!mainVisualizerEnabled)}
+                        className={`text-[10px] font-bold py-2 rounded transition-colors border ${mainVisualizerEnabled ? 'bg-purple-600 border-purple-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
                       >
-                          Qt6 Visualizer
+                        Main Visualizer
                       </button>
                   </div>
               </div>
 
               {/* Background File Upload */}
-              {visualMode === 'cover' && (
+              {showBackgroundLayer && (
                   <div>
                       <label className="text-xs text-slate-500 block mb-1">Custom Media</label>
                       <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-slate-800 transition-colors group bg-slate-900/50">
@@ -155,6 +166,31 @@ const MediaCard: React.FC<MediaCardProps> = ({
                       </label>
                   </div>
               )}
+
+              <div>
+                  <label className="text-xs text-slate-500 block mb-1">Watermark / Logo</label>
+                  {logoAsset ? (
+                    <div className="flex items-center justify-between bg-slate-900 border border-cyan-500/30 rounded p-2">
+                        <span className="text-xs text-cyan-200 truncate pr-3" title={logoAsset.name}>{logoAsset.name}</span>
+                        <button onClick={() => setLogoAsset(null)} className="text-slate-500 hover:text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                            </svg>
+                        </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-slate-800 transition-colors group bg-slate-900/50">
+                        <input
+                            type="file"
+                            accept="image/png, image/jpeg, image/webp"
+                            className="hidden"
+                            onChange={onLogoUpload}
+                        />
+                        <span className="text-xs text-slate-400 group-hover:text-white">Upload PNG/JPG Logo</span>
+                    </label>
+                  )}
+                  {logoAsset && <img id="custom-logo-img" src={logoAsset.url} alt="logo-watermark" className="hidden" crossOrigin="anonymous" />}
+              </div>
 
               {/* Audio File Upload */}
               <div>
