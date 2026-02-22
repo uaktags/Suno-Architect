@@ -8,10 +8,10 @@ interface TrackSelectorProps {
 
 const TrackSelector: React.FC<TrackSelectorProps> = ({ numTracks, maxTracks = 7, onChange }) => {
   return (
-    <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-4">
+    <div className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-xl p-4">
         <div className="flex justify-between items-center mb-3">
             <label className="text-sm font-medium text-slate-300">Tracks to Generate</label>
-            <span className="bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full">{numTracks} {numTracks === 1 ? 'Track' : 'Tracks'}</span>
+            <span className="bg-[var(--app-accent)] text-white text-xs font-bold px-2 py-1 rounded-full">{numTracks} {numTracks === 1 ? 'Track' : 'Tracks'}</span>
         </div>
         <input 
             type="range" 

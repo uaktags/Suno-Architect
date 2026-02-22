@@ -145,7 +145,7 @@ const InputSection: React.FC<InputSectionProps> = ({
 
   return (
     <>
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 shadow-xl relative">
+        <div className="bg-[var(--app-panel)] backdrop-blur-sm border border-[var(--app-panel-border)] rounded-2xl p-6 shadow-xl relative">
         <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-4">
             Describe Your Album
         </h2>
@@ -160,7 +160,7 @@ const InputSection: React.FC<InputSectionProps> = ({
                 onChange={(e) => setPrompt(e.target.value)}
                 disabled={isLoading}
                 placeholder="E.g., A concept album about a city submerged under neon waves. Mix of synth-pop and heavy industrial."
-                className="w-full h-32 bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all resize-none text-base"
+                className="w-full h-32 bg-slate-900 border border-[var(--app-panel-border)] rounded-xl p-4 text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-[var(--app-accent)]/50 focus:border-transparent outline-none transition-all resize-none text-base"
             />
             </div>
 
@@ -201,7 +201,7 @@ const InputSection: React.FC<InputSectionProps> = ({
                 onChange={(e) => setReferenceIdsInput(e.target.value)}
                 disabled={isLoading}
                 placeholder="UUID, UUID:70, UUID:30 (comma/space/newline separated)"
-                className="w-full h-24 bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all resize-none"
+                className="w-full h-24 bg-slate-900 border border-[var(--app-panel-border)] rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-[var(--app-accent)]/50 focus:border-transparent outline-none transition-all resize-none"
               />
               <p className="text-xs text-slate-500 mt-2">
                 Format: <code>songId</code> or <code>songId:weight</code>. Weights are 1-100 and bias influence per reference.
@@ -218,7 +218,7 @@ const InputSection: React.FC<InputSectionProps> = ({
                 onChange={(e) => setReferencePlaylistsInput(e.target.value)}
                 disabled={isLoading}
                 placeholder="Paste playlist URL(s) or playlist ID(s), comma/space/newline separated"
-                className="w-full h-20 bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all resize-none"
+                className="w-full h-20 bg-slate-900 border border-[var(--app-panel-border)] rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-[var(--app-accent)]/50 focus:border-transparent outline-none transition-all resize-none"
               />
             </div>
 
@@ -228,7 +228,7 @@ const InputSection: React.FC<InputSectionProps> = ({
                 <select
                   value={objectivePreset}
                   onChange={(e) => setObjectivePreset(e.target.value as AlbumObjectivePreset)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-[var(--app-accent)]/50 focus:border-transparent outline-none"
                 >
                   <option value="standard">Standard Album Generation</option>
                   <option value="append">Append New Tracks to Referenced Album</option>
@@ -251,7 +251,7 @@ const InputSection: React.FC<InputSectionProps> = ({
                   onChange={(e) => setPreserveMotifsInput(e.target.value)}
                   disabled={isLoading}
                   placeholder="e.g. neon coast, whispered pre-hook, 128 BPM pulse"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-[var(--app-accent)]/50 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -266,7 +266,7 @@ const InputSection: React.FC<InputSectionProps> = ({
                   onChange={(e) => setAvoidMotifsInput(e.target.value)}
                   disabled={isLoading}
                   placeholder="e.g. trap hi-hat rolls, choir stacks, guitar solos"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-[var(--app-accent)]/50 focus:border-transparent outline-none"
                 />
               </div>
             </div>

@@ -63,7 +63,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({ text, label = 'Copy' }) => {
             ? 'bg-green-500/20 border-green-500/50 text-green-400'
             : failed
             ? 'bg-red-500/20 border-red-500/50 text-red-300'
-            : 'bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white'
+            : 'bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-[var(--app-tab-hover)] hover:text-white'
         }
       `}
     >

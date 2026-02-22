@@ -22,17 +22,17 @@ const TrackCard: React.FC<TrackCardProps> = ({ data, index, totalTracks, status,
         : "grid grid-cols-1 md:grid-cols-2 gap-4";
 
   return (
-    <div className="space-y-6 relative pb-12 border-b border-slate-800 last:border-0 last:pb-0">
+    <div className="space-y-6 relative pb-12 border-b border-[var(--app-panel-border)] last:border-0 last:pb-0">
         <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
                 {totalTracks > 1 && (
-                    <span className="bg-slate-800 text-slate-400 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-slate-700">Track {index + 1}</span>
+                    <span className="bg-[var(--app-panel)] text-slate-400 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-[var(--app-panel-border)]">Track {index + 1}</span>
                 )}
                 {status.success && <span className="text-xs text-green-400 font-bold">✓ Synced</span>}
             </div>
             <button 
                 onClick={onEdit}
-                className="text-xs text-slate-400 hover:text-white flex items-center gap-1 bg-slate-800/50 hover:bg-slate-800 px-2 py-1 rounded transition-colors"
+                className="text-xs text-slate-400 hover:text-white flex items-center gap-1 bg-[var(--app-panel)] hover:bg-[var(--app-panel)] px-2 py-1 rounded transition-colors"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -45,8 +45,8 @@ const TrackCard: React.FC<TrackCardProps> = ({ data, index, totalTracks, status,
         {/* Meta Data Grid */}
         <div className={gridClass}>
             {data.title && (
-                <div className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden shadow-lg flex flex-col">
-                    <div className="bg-slate-900/50 px-4 py-3 border-b border-slate-700 flex justify-between items-center shrink-0">
+                <div className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-xl overflow-hidden shadow-lg flex flex-col">
+                    <div className="bg-[var(--app-panel)] px-4 py-3 border-b border-[var(--app-panel-border)] flex justify-between items-center shrink-0">
                         <h3 className="text-sm font-semibold text-emerald-300 uppercase tracking-wider">Title</h3>
                         <CopyButton text={data.title} label="Copy" />
                     </div>
@@ -56,8 +56,8 @@ const TrackCard: React.FC<TrackCardProps> = ({ data, index, totalTracks, status,
                 </div>
             )}
             {data.style && (
-                <div className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden shadow-lg flex flex-col">
-                    <div className="bg-slate-900/50 px-4 py-3 border-b border-slate-700 flex justify-between items-center shrink-0">
+                <div className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-xl overflow-hidden shadow-lg flex flex-col">
+                    <div className="bg-[var(--app-panel)] px-4 py-3 border-b border-[var(--app-panel-border)] flex justify-between items-center shrink-0">
                         <h3 className="text-sm font-semibold text-purple-300 uppercase tracking-wider">Style</h3>
                         <CopyButton text={data.style} label="Copy" />
                     </div>
@@ -67,8 +67,8 @@ const TrackCard: React.FC<TrackCardProps> = ({ data, index, totalTracks, status,
                 </div>
             )}
             {data.excludeStyles && (
-                <div className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden shadow-lg flex flex-col">
-                    <div className="bg-slate-900/50 px-4 py-3 border-b border-slate-700 flex justify-between items-center shrink-0">
+                <div className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-xl overflow-hidden shadow-lg flex flex-col">
+                    <div className="bg-[var(--app-panel)] px-4 py-3 border-b border-[var(--app-panel-border)] flex justify-between items-center shrink-0">
                         <h3 className="text-sm font-semibold text-red-300 uppercase tracking-wider">Negative</h3>
                         <CopyButton text={data.excludeStyles} label="Copy" />
                     </div>
@@ -78,8 +78,8 @@ const TrackCard: React.FC<TrackCardProps> = ({ data, index, totalTracks, status,
                 </div>
             )}
             {data.advancedParams && (
-                <div className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden shadow-lg flex flex-col">
-                    <div className="bg-slate-900/50 px-4 py-3 border-b border-slate-700 flex justify-between items-center shrink-0">
+                <div className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-xl overflow-hidden shadow-lg flex flex-col">
+                    <div className="bg-[var(--app-panel)] px-4 py-3 border-b border-[var(--app-panel-border)] flex justify-between items-center shrink-0">
                         <h3 className="text-sm font-semibold text-blue-300 uppercase tracking-wider">Parameters</h3>
                         <CopyButton text={data.advancedParams} label="Copy" />
                     </div>
@@ -92,8 +92,8 @@ const TrackCard: React.FC<TrackCardProps> = ({ data, index, totalTracks, status,
 
         {/* Lyrics Section */}
         {data.lyricsWithTags && (
-            <div className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
-                <div className="bg-slate-900/50 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+            <div className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-xl overflow-hidden shadow-lg">
+                <div className="bg-[var(--app-panel)] px-4 py-3 border-b border-[var(--app-panel-border)] flex justify-between items-center">
                     <h3 className="text-sm font-semibold text-pink-300 uppercase tracking-wider">Lyrics</h3>
                     <div className="flex items-center gap-2">
                         {sunoCookie && (

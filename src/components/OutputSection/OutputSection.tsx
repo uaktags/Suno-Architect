@@ -99,7 +99,7 @@ const OutputSection: React.FC<OutputSectionProps> = ({ results, sunoCookie, suno
 
       {/* Fallback if parsing failed for all */}
       {results.length === 1 && !results[0].style && !results[0].lyricsWithTags && results[0].fullResponse && (
-          <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-6">
+          <div className="bg-[var(--app-panel)] border border-[var(--app-panel-border)] rounded-xl p-6">
               <h3 className="text-red-400 mb-2 font-bold">Parsing Error</h3>
               <pre className="whitespace-pre-wrap font-mono text-sm text-slate-300 break-words">{results[0].fullResponse}</pre>
           </div>

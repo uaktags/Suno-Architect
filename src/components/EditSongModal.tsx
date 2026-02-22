@@ -38,10 +38,10 @@ const EditSongModal: React.FC<EditSongModalProps> = ({ isOpen, onClose, onSave, 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="bg-slate-900 border border-[var(--app-panel-border)] rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="flex-shrink-0 border-b border-slate-800 bg-slate-900/80 p-4 rounded-t-2xl flex justify-between items-center">
+        <div className="flex-shrink-0 border-b border-[var(--app-panel-border)] bg-[var(--app-panel)] p-4 rounded-t-2xl flex justify-between items-center">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 Edit Song Output
             </h2>
@@ -57,12 +57,12 @@ const EditSongModal: React.FC<EditSongModalProps> = ({ isOpen, onClose, onSave, 
             
             {/* Title */}
             <div>
-                <label className="block text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Title</label>
+                <label className="block text-xs font-bold text-[var(--app-accent)] uppercase tracking-wider mb-2">Title</label>
                 <input 
                     type="text" 
                     value={data.title}
                     onChange={(e) => setData({ ...data, title: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-emerald-500 outline-none"
+                    className="w-full bg-slate-950 border border-[var(--app-panel-border)] rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-emerald-500 outline-none"
                 />
             </div>
 
@@ -73,7 +73,7 @@ const EditSongModal: React.FC<EditSongModalProps> = ({ isOpen, onClose, onSave, 
                     <div>
                         <div className="flex justify-between items-center mb-1">
                             <label className="text-xs font-bold text-slate-400">Weirdness</label>
-                            <span className="text-xs font-mono text-purple-400">{data.weirdness}%</span>
+                            <span className="text-xs font-mono text-[var(--app-accent)]">{data.weirdness}%</span>
                         </div>
                         <input 
                             type="range" 
@@ -87,7 +87,7 @@ const EditSongModal: React.FC<EditSongModalProps> = ({ isOpen, onClose, onSave, 
                     <div>
                         <div className="flex justify-between items-center mb-1">
                             <label className="text-xs font-bold text-slate-400">Style Influence</label>
-                            <span className="text-xs font-mono text-blue-400">{data.styleInfluence}%</span>
+                            <span className="text-xs font-mono text-[var(--app-accent)]">{data.styleInfluence}%</span>
                         </div>
                         <input 
                             type="range" 
@@ -103,7 +103,7 @@ const EditSongModal: React.FC<EditSongModalProps> = ({ isOpen, onClose, onSave, 
                 {/* Vocal Gender */}
                 <div>
                     <label className="block text-xs font-bold text-slate-400 mb-2">Vocal Gender</label>
-                    <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
+                    <div className="flex bg-[var(--app-panel)] rounded-lg p-1 border border-[var(--app-panel-border)]">
                         {['Male', 'Female', 'None'].map((gender) => (
                             <button
                                 key={gender}
@@ -124,11 +124,11 @@ const EditSongModal: React.FC<EditSongModalProps> = ({ isOpen, onClose, onSave, 
             {/* Styles */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label className="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Style Tags</label>
+                    <label className="block text-xs font-bold text-[var(--app-accent)] uppercase tracking-wider mb-2">Style Tags</label>
                     <textarea 
                         value={data.style}
                         onChange={(e) => setData({ ...data, style: e.target.value })}
-                        className="w-full h-24 bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 focus:ring-1 focus:ring-purple-500 outline-none resize-none custom-scrollbar"
+                        className="w-full h-24 bg-slate-950 border border-[var(--app-panel-border)] rounded-lg p-3 text-sm text-slate-300 focus:ring-1 focus:ring-[var(--app-accent)]/50 outline-none resize-none custom-scrollbar"
                     />
                 </div>
                 <div>
@@ -136,7 +136,7 @@ const EditSongModal: React.FC<EditSongModalProps> = ({ isOpen, onClose, onSave, 
                     <textarea 
                         value={data.excludeStyles}
                         onChange={(e) => setData({ ...data, excludeStyles: e.target.value })}
-                        className="w-full h-24 bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 focus:ring-1 focus:ring-red-500 outline-none resize-none custom-scrollbar"
+                        className="w-full h-24 bg-slate-950 border border-[var(--app-panel-border)] rounded-lg p-3 text-sm text-slate-300 focus:ring-1 focus:ring-red-500 outline-none resize-none custom-scrollbar"
                     />
                 </div>
             </div>
@@ -147,18 +147,18 @@ const EditSongModal: React.FC<EditSongModalProps> = ({ isOpen, onClose, onSave, 
                 <textarea 
                     value={data.lyricsWithTags}
                     onChange={(e) => setData({ ...data, lyricsWithTags: e.target.value })}
-                    className="w-full h-64 bg-slate-950 border border-slate-700 rounded-lg p-4 text-sm font-mono text-slate-300 focus:ring-1 focus:ring-pink-500 outline-none custom-scrollbar leading-relaxed"
+                    className="w-full h-64 bg-slate-950 border border-[var(--app-panel-border)] rounded-lg p-4 text-sm font-mono text-slate-300 focus:ring-1 focus:ring-pink-500 outline-none custom-scrollbar leading-relaxed"
                 />
             </div>
 
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex justify-end gap-3 p-4 border-t border-slate-800 bg-slate-900/80 rounded-b-2xl">
-            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+        <div className="flex-shrink-0 flex justify-end gap-3 p-4 border-t border-[var(--app-panel-border)] bg-[var(--app-panel)] rounded-b-2xl">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-[var(--app-panel)] rounded-lg transition-colors">
               Cancel
             </button>
-            <button onClick={handleSave} className="px-6 py-2 text-sm font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-lg shadow-lg hover:shadow-purple-500/25 transition-all">
+            <button onClick={handleSave} className="px-6 py-2 text-sm font-bold text-white bg-[var(--app-accent)] hover:bg-[var(--app-accent)] rounded-lg shadow-lg hover:shadow-purple-500/25 transition-all">
               Save Changes
             </button>
         </div>

@@ -9,9 +9,9 @@ interface AlbumHeaderProps {
 
 const AlbumHeader: React.FC<AlbumHeaderProps> = ({ trackCount, onSyncAll, syncAllLoading, sunoCookie }) => {
   return (
-    <div className="sticky top-[80px] z-40 bg-slate-900/90 backdrop-blur-md border border-purple-500/30 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-4 shadow-2xl">
+    <div className="sticky top-[80px] z-40 bg-[var(--app-panel)] backdrop-blur-md border border-purple-500/30 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-4 shadow-2xl">
         <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+        <div className="w-10 h-10 bg-[var(--app-accent)] rounded-lg flex items-center justify-center text-white font-bold">
             {trackCount}
         </div>
         <div>
@@ -27,8 +27,8 @@ const AlbumHeader: React.FC<AlbumHeaderProps> = ({ trackCount, onSyncAll, syncAl
         ${syncAllLoading 
             ? 'bg-purple-800 text-white cursor-wait' 
             : !sunoCookie 
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/20'
+                ? 'bg-[var(--app-panel)] text-slate-500 cursor-not-allowed'
+                : 'bg-[var(--app-accent)] hover:bg-[var(--app-accent)] text-white shadow-purple-500/20'
         }`}
         >
         {syncAllLoading ? (

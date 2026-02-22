@@ -28,7 +28,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ selectedFiles, onFileChange
                 const isImage = file.mimeType.startsWith('image/');
                 
                 return (
-                    <div key={idx} className={`flex items-center gap-2 bg-slate-900 border ${isAudio ? 'border-pink-500/50' : 'border-slate-700'} rounded-lg p-2 animate-in fade-in zoom-in-95 duration-200`}>
+                    <div key={idx} className={`flex items-center gap-2 bg-slate-900 border ${isAudio ? 'border-pink-500/50' : 'border-[var(--app-panel-border)]'} rounded-lg p-2 animate-in fade-in zoom-in-95 duration-200`}>
                         <div className={`${isAudio ? 'bg-pink-900/50' : 'bg-purple-900/50'} p-1.5 rounded-md`}>
                             {isAudio ? (
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-pink-300">
@@ -53,7 +53,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ selectedFiles, onFileChange
                         <button 
                           type="button" 
                           onClick={() => onRemoveFile(idx)}
-                          className="text-slate-500 hover:text-red-400 p-1 rounded-full hover:bg-slate-800 transition-colors"
+                          className="text-slate-500 hover:text-red-400 p-1 rounded-full hover:bg-[var(--app-panel)] transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -67,7 +67,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ selectedFiles, onFileChange
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              className="flex items-center gap-2 text-sm text-slate-400 hover:text-purple-400 transition-colors px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-700/50 hover:border-purple-500/50"
+              className="flex items-center gap-2 text-sm text-slate-400 hover:text-[var(--app-accent)] transition-colors px-3 py-2 rounded-lg bg-[var(--app-panel)] border border-[var(--app-panel-border)]/50 hover:border-purple-500/50"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
