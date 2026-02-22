@@ -14,6 +14,7 @@ import { downloadAccountCache } from './services/offlineSyncService';
 import HistorySection from './components/HistorySection/HistorySection';
 import VisualizerSection from './components/VisualizerSection/VisualizerSection';
 import AlbumsSection from './components/AlbumsSection/AlbumsSection';
+import AlbumBuilderSection from './components/AlbumBuilderSection/AlbumBuilderSection';
 import WebAudioMasterSection from './components/WebAudioMasterSection';
 import { stripMetaTags } from './utils/lyrics';
 import { validateProviderConfig, getDefaultModelForProvider, getMaxTracksForProvider } from './services/providers/providerFactory';
@@ -650,6 +651,8 @@ const App: React.FC = () => {
               );
           case 'albums':
               return <AlbumsSection history={history} />;
+          case 'album-builder':
+              return <AlbumBuilderSection history={history} />;
           case 'web-audio-master':
               return <WebAudioMasterSection />;
           case 'generator':
@@ -837,6 +840,16 @@ const App: React.FC = () => {
                 }`}
              >
                 Albums
+             </button>
+             <button
+                onClick={() => setView('album-builder')}
+                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                    view === 'album-builder'
+                    ? 'bg-slate-700 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                }`}
+             >
+                Album Builder
              </button>
              <button
                 onClick={() => setView('visualizer')}
