@@ -1,5 +1,6 @@
 
 import { ParsedSunoOutput, LyricAlignmentResponse } from "../types";
+import { listTracksByUpdatedAtDesc } from './offlineDb';
 
 export const extractSunoPlaylistId = (input: string): string | null => {
     const trimmed = (input || "").trim();
@@ -159,6 +160,45 @@ export const getSunoFeed = async (
         // console.error("Failed to get suno feed:", error);
         throw error;
     }
+};
+
+export const getSunoFeedOfflineAware = async (
+    cookie: string,
+    limit: number = 20,
+    cursor: string | null = null,
+    searchText?: string,
+    options?: { offlineMode?: boolean }
+): Promise<any> => {
+    const offlineMode = !!options?.offlineMode;
+    if (!offlineMode) {
+        return getSunoFeed(cookie, limit, cursor, searchText);
+    }
+
+    const tracks = await listTracksByUpdatedAtDesc(limit);
+    const filtered = searchText?.trim()
+        ? tracks.filter((t) => {
+            const q = searchText.toLowerCase();
+            return t.title.toLowerCase().includes(q) || t.metadata.prompt.toLowerCase().includes(q);
+        })
+        : tracks;
+
+    return {
+        clips: filtered.map((t) => ({
+            id: t.id,
+            title: t.title,
+            created_at: new Date(t.createdAt).toISOString(),
+            model_name: t.raw?.model_name || 'offline',
+            image_url: t.imageUrl,
+            image_large_url: t.imageUrl,
+            metadata: {
+                ...(t.raw?.metadata || {}),
+                prompt: t.metadata.prompt,
+                tags: t.metadata.tags.join(', '),
+                duration: t.metadata.durationMs / 1000,
+            },
+            audio_url: t.audioUrl,
+        })),
+    };
 };
 
 export const getLyricAlignment = async (songId: string, cookie: string): Promise<LyricAlignmentResponse> => {

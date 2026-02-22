@@ -13,12 +13,16 @@ interface HistoryToolbarProps {
   setLimit: (limit: number) => void;
   onClearSearch: () => void;
   isShowingSearchResults: boolean;
+  onDownloadOfflineCache: () => void;
+  isDownloadingOfflineCache: boolean;
+  offlineProgress?: string;
 }
 
 const HistoryToolbar: React.FC<HistoryToolbarProps> = ({ 
     count, searchText, setSearchText, onAction, isActionLoading, 
     onFetchHistory, isSyncing, syncProgress,
-    limit, setLimit, onClearSearch, isShowingSearchResults
+    limit, setLimit, onClearSearch, isShowingSearchResults,
+    onDownloadOfflineCache, isDownloadingOfflineCache, offlineProgress
 }) => {
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -119,6 +123,17 @@ const HistoryToolbar: React.FC<HistoryToolbarProps> = ({
                             <span>Fetch</span>
                         </>
                     )}
+                </button>
+
+                <button
+                    onClick={onDownloadOfflineCache}
+                    disabled={isDownloadingOfflineCache}
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap border
+                    ${isDownloadingOfflineCache
+                    ? 'bg-slate-700/50 text-slate-300 border-slate-600 cursor-wait'
+                    : 'bg-black text-green-300 border-green-500 hover:bg-slate-950'}`}
+                >
+                    {isDownloadingOfflineCache ? (offlineProgress || 'Downloading cache...') : 'Download Account Cache'}
                 </button>
             </div>
         </div>

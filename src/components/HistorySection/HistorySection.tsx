@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SunoClip, ParsedSunoOutput } from '../../types';
-import { extractSunoPlaylistId, getSunoClip, getSunoFeed, getSunoPlaylist } from '../../services/sunoApi';
+import { extractSunoPlaylistId, getSunoClip, getSunoFeedOfflineAware, getSunoPlaylist } from '../../services/sunoApi';
 import HistoryToolbar from './HistoryToolbar';
 import HistoryCard from './HistoryCard';
 import DetailsModal from './DetailsModal';
@@ -14,6 +14,11 @@ interface HistorySectionProps {
   onFetchHistory: (limit: number | 'all') => void;
   isSyncing: boolean;
   syncProgress?: string;
+  onDownloadOfflineCache: () => void;
+  isDownloadingOfflineCache: boolean;
+  offlineProgress?: string;
+  offlineMode: boolean;
+  onToggleOfflineMode: (value: boolean) => void;
 }
 
 // Helper to map API response to SunoClip (reused logic)
@@ -58,7 +63,20 @@ const mapSunoClip = (clip: any): SunoClip => {
     };
 };
 
-const HistorySection: React.FC<HistorySectionProps> = ({ history, onUpdateClip, onAddClip, sunoCookie, onFetchHistory, isSyncing, syncProgress }) => {
+const HistorySection: React.FC<HistorySectionProps> = ({
+  history,
+  onUpdateClip,
+  onAddClip,
+  sunoCookie,
+  onFetchHistory,
+  isSyncing,
+  syncProgress,
+  onDownloadOfflineCache,
+  isDownloadingOfflineCache,
+  offlineProgress,
+  offlineMode,
+  onToggleOfflineMode,
+}) => {
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   
   // Search & Filter State
@@ -116,7 +134,7 @@ const HistorySection: React.FC<HistorySectionProps> = ({ history, onUpdateClip, 
               }
           } else {
               // Feed Search
-              const data = await getSunoFeed(sunoCookie, limit, null, input);
+              const data = await getSunoFeedOfflineAware(sunoCookie, limit, null, input, { offlineMode });
               if (data && Array.isArray(data.clips)) {
                   const results = data.clips.map(mapSunoClip);
                   setSearchResults(results);
@@ -156,7 +174,19 @@ const HistorySection: React.FC<HistorySectionProps> = ({ history, onUpdateClip, 
             setLimit={setLimit}
             onClearSearch={handleClearSearch}
             isShowingSearchResults={!!(searchText && searchResults)}
+            onDownloadOfflineCache={onDownloadOfflineCache}
+            isDownloadingOfflineCache={isDownloadingOfflineCache}
+            offlineProgress={offlineProgress}
         />
+        <div className="flex items-center gap-3 border border-slate-700 bg-black/40 px-3 py-2 rounded-md w-fit">
+          <span className="text-[11px] uppercase tracking-wider text-slate-300">Mode</span>
+          <button
+            onClick={() => onToggleOfflineMode(!offlineMode)}
+            className={`text-xs font-bold px-2.5 py-1 rounded border ${offlineMode ? 'bg-green-400/10 text-green-300 border-green-500' : 'bg-slate-800 text-slate-200 border-slate-600'}`}
+          >
+            {offlineMode ? 'Offline' : 'Online'}
+          </button>
+        </div>
         
         {displayList.length === 0 ? (
              <div className="text-center py-20 bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-700">

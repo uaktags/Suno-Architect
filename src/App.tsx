@@ -9,7 +9,8 @@ import { DEFAULT_SUNO_LIBRARY, DEFAULT_LYRICAL_CONSTRAINTS, buildKnowledgeBase, 
 import Footer from './components/Footer';
 import SunoSettingsModal from './components/SunoSettingsModal';
 import { ProviderSettingsModal } from './components/ProviderSettingsModal';
-import { getSunoCredits, updateSunoMetadata, getSunoFeed, getSunoClip, getSunoPlaylist } from './services/sunoApi';
+import { getSunoCredits, updateSunoMetadata, getSunoFeed, getSunoFeedOfflineAware, getSunoClip, getSunoPlaylist } from './services/sunoApi';
+import { downloadAccountCache } from './services/offlineSyncService';
 import HistorySection from './components/HistorySection/HistorySection';
 import VisualizerSection from './components/VisualizerSection/VisualizerSection';
 import AlbumsSection from './components/AlbumsSection/AlbumsSection';
@@ -145,6 +146,9 @@ const App: React.FC = () => {
   const [sunoCredits, setSunoCredits] = useState<number | null>(null);
   const [isSyncingHistory, setIsSyncingHistory] = useState(false);
   const [syncProgress, setSyncProgress] = useState('');
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [isDownloadingOfflineCache, setIsDownloadingOfflineCache] = useState(false);
+  const [offlineProgress, setOfflineProgress] = useState('');
 
   const [promptSettings, setPromptSettings] = useState<PromptSettings>(() => {
       try {
@@ -166,6 +170,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const savedCookie = localStorage.getItem('suno_cookie');
     const savedModel = localStorage.getItem('suno_model');
+    const savedOfflineMode = localStorage.getItem('offline_mode');
     
     if (savedCookie) {
       setSunoCookie(savedCookie);
@@ -180,7 +185,14 @@ const App: React.FC = () => {
     if (savedModel) {
       setSunoModel(savedModel);
     }
+    if (savedOfflineMode) {
+      setOfflineMode(savedOfflineMode === '1');
+    }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('offline_mode', offlineMode ? '1' : '0');
+  }, [offlineMode]);
 
   useEffect(() => {
     localStorage.setItem('suno_history', JSON.stringify(history));
@@ -285,7 +297,7 @@ const App: React.FC = () => {
 
   const fetchAndMergeSunoHistory = async (cookie: string) => {
     try {
-        const feedData = await getSunoFeed(cookie, 50);
+        const feedData = await getSunoFeedOfflineAware(cookie, 50, null, undefined, { offlineMode });
         if (feedData && Array.isArray(feedData.clips)) {
             const newClips = feedData.clips.map(mapSunoClip);
             mergeClips(newClips);
@@ -307,7 +319,7 @@ const App: React.FC = () => {
     setSyncProgress('Fetching...');
     
     try {
-        const feedData = await getSunoFeed(sunoCookie, fetchLimit);
+        const feedData = await getSunoFeedOfflineAware(sunoCookie, fetchLimit, null, undefined, { offlineMode });
         
         if (feedData && Array.isArray(feedData.clips)) {
              const newClips = feedData.clips.map(mapSunoClip);
@@ -319,7 +331,7 @@ const App: React.FC = () => {
              setSyncProgress(`Rate limited. Retrying...`);
              await new Promise(r => setTimeout(r, 5000));
              try {
-                const feedData = await getSunoFeed(sunoCookie, fetchLimit);
+                const feedData = await getSunoFeedOfflineAware(sunoCookie, fetchLimit, null, undefined, { offlineMode });
                 if (feedData && Array.isArray(feedData.clips)) {
                     const newClips = feedData.clips.map(mapSunoClip);
                     mergeClips(newClips);
@@ -336,6 +348,31 @@ const App: React.FC = () => {
     } finally {
         setIsSyncingHistory(false);
         setTimeout(() => { if (!isSyncingHistory) setSyncProgress(''); }, 2000);
+    }
+  };
+
+  const handleDownloadOfflineCache = async () => {
+    if (!sunoCookie) {
+      alert('Please connect your Suno account first.');
+      return;
+    }
+
+    setIsDownloadingOfflineCache(true);
+    setOfflineProgress('Preparing sync…');
+
+    try {
+      const result = await downloadAccountCache(sunoCookie, [], (progress) => {
+        setOfflineProgress(progress.message);
+      });
+      setOfflineMode(true);
+      setOfflineProgress(`Cached: +${result.added} new, ${result.updated} updated, ${result.unchanged} unchanged`);
+      await handleFetchHistory(200);
+    } catch (error: any) {
+      console.error('Offline cache sync failed', error);
+      setOfflineProgress('Offline sync failed.');
+    } finally {
+      setIsDownloadingOfflineCache(false);
+      setTimeout(() => setOfflineProgress(''), 3500);
     }
   };
 
@@ -595,6 +632,11 @@ const App: React.FC = () => {
                     onFetchHistory={handleFetchHistory}
                     isSyncing={isSyncingHistory}
                     syncProgress={syncProgress}
+                    onDownloadOfflineCache={handleDownloadOfflineCache}
+                    isDownloadingOfflineCache={isDownloadingOfflineCache}
+                    offlineProgress={offlineProgress}
+                    offlineMode={offlineMode}
+                    onToggleOfflineMode={setOfflineMode}
                 />
               );
           case 'visualizer':
