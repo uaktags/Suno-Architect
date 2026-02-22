@@ -173,7 +173,7 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                      />
 
                      {/* Audio Player (Hidden visually but used for logic) */}
-                     <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 hidden">
+                     <div className="bg-slate-900 p-4 rounded-xl border border-[var(--app-panel-border)] hidden">
                          <audio 
                             ref={refs.audioRef} 
                             controls 
@@ -199,13 +199,13 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                         hasAlignment={!!state.alignment}
                      />
 
-                     <div className="border-2 border-slate-700 bg-black p-3 space-y-3">
+                     <div className="border-2 border-[var(--app-panel-border)] bg-black p-3 space-y-3">
                         <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-300">Publishing Workflow</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           <select
                             value={publishTarget}
                             onChange={(e) => setPublishTarget(e.target.value as 'youtube' | 'facebook' | 'both')}
-                            className="h-10 px-3 bg-slate-950 border border-slate-700 text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                            className="h-10 px-3 bg-slate-950 border border-[var(--app-panel-border)] text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-cyan-400"
                           >
                             <option value="youtube">Publish: YouTube (16:9)</option>
                             <option value="facebook">Publish: Facebook (16:9 / 9:16)</option>
@@ -216,7 +216,7 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                             <select
                               value={fbAspect}
                               onChange={(e) => setFbAspect(e.target.value as 'landscape' | 'portrait')}
-                              className="h-10 px-3 bg-slate-950 border border-slate-700 text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                              className="h-10 px-3 bg-slate-950 border border-[var(--app-panel-border)] text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-cyan-400"
                             >
                               <option value="landscape">Facebook Aspect: 16:9 Landscape</option>
                               <option value="portrait">Facebook Aspect: 9:16 Portrait</option>
@@ -228,13 +228,13 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                           value={publishTitle}
                           onChange={(e) => setPublishTitle(e.target.value)}
                           placeholder="PUBLISH TITLE"
-                          className="w-full h-10 px-3 bg-slate-950 border border-slate-700 text-xs uppercase tracking-wider placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                          className="w-full h-10 px-3 bg-slate-950 border border-[var(--app-panel-border)] text-xs uppercase tracking-wider placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                         />
                         <textarea
                           value={publishDescription}
                           onChange={(e) => setPublishDescription(e.target.value)}
                           placeholder="PUBLISH DESCRIPTION"
-                          className="w-full h-24 p-3 bg-slate-950 border border-slate-700 text-xs tracking-wide placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                          className="w-full h-24 p-3 bg-slate-950 border border-[var(--app-panel-border)] text-xs tracking-wide placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                         />
 
                         <button
@@ -296,6 +296,13 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                         qt6Style={state.qt6Style} setQt6Style={setters.setQt6Style}
                         qt6BarCount={state.qt6BarCount} setQt6BarCount={setters.setQt6BarCount}
                         qt6Sensitivity={state.qt6Sensitivity} setQt6Sensitivity={setters.setQt6Sensitivity}
+                        qt6SpectrogramSpeed={state.qt6SpectrogramSpeed} setQt6SpectrogramSpeed={setters.setQt6SpectrogramSpeed}
+                        qt6ParticleDensity={state.qt6ParticleDensity} setQt6ParticleDensity={setters.setQt6ParticleDensity}
+                        qt6RingCount={state.qt6RingCount} setQt6RingCount={setters.setQt6RingCount}
+                        qt6LedSegments={state.qt6LedSegments} setQt6LedSegments={setters.setQt6LedSegments}
+                        qt6SpectrogramPalette={state.qt6SpectrogramPalette} setQt6SpectrogramPalette={setters.setQt6SpectrogramPalette}
+                        onApplyQt6LookPreset={handlers.applyQt6LookPreset}
+                        onRandomizeQt6Look={handlers.randomizeQt6Look}
                         videoBitrate={state.videoBitrate} setVideoBitrate={setters.setVideoBitrate}
                         videoBitrateMode={state.videoBitrateMode} setVideoBitrateMode={setters.setVideoBitrateMode}
                         fps={state.fps} setFps={setters.setFps}
@@ -321,6 +328,11 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
                             setters.setQt6Style('wave');
                             setters.setQt6BarCount(64);
                             setters.setQt6Sensitivity(1.0);
+                            setters.setQt6SpectrogramSpeed(1);
+                            setters.setQt6ParticleDensity(1);
+                            setters.setQt6RingCount(3);
+                            setters.setQt6LedSegments(14);
+                            setters.setQt6SpectrogramPalette('neon');
                             setters.setVideoBitrate(5000000);
                             setters.setVideoBitrateMode('variable');
                             setters.setFps(30);
@@ -360,7 +372,7 @@ const VisualizerSection: React.FC<VisualizerSectionProps> = ({ history, sunoCook
         )}
         
         {!state.selectedClipId && (
-            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/20 text-slate-600">
+            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-[var(--app-panel-border)] rounded-2xl bg-[var(--app-panel)] text-slate-600">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 opacity-20 mb-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
                 </svg>

@@ -24,7 +24,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   formatTime
 }) => {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+    <div className="bg-slate-900 border border-[var(--app-panel-border)] rounded-xl p-4 space-y-3">
         <div className="relative group">
             <input 
               type="range" 
@@ -32,7 +32,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               max={duration || 100}
               value={progress}
               onChange={onSeek}
-              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              className="w-full h-2 bg-[var(--app-panel)] rounded-lg appearance-none cursor-pointer accent-purple-500"
               style={{
                   background: `linear-gradient(to right, #a855f7 ${(progress / (duration || 1)) * 100}%, #1e293b ${(progress / (duration || 1)) * 100}%)`
               }}

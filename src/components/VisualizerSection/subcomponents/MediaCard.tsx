@@ -38,9 +38,9 @@ const MediaCard: React.FC<MediaCardProps> = ({
   handleImageError
 }) => {
   return (
-    <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-lg p-4 space-y-4">
+    <div className="bg-[var(--app-panel)] rounded-xl overflow-hidden border border-[var(--app-panel-border)] shadow-lg p-4 space-y-4">
       {/* Cover Art / Visualizer Preview */}
-      <div className="relative group rounded-lg overflow-hidden border border-slate-700/50">
+      <div className="relative group rounded-lg overflow-hidden border border-[var(--app-panel-border)]/50">
           {showBackgroundLayer ? (
             <>
                 <img 
@@ -75,17 +75,17 @@ const MediaCard: React.FC<MediaCardProps> = ({
                 )}
             </>
           ) : mainVisualizerEnabled ? (
-            <div className="w-full h-32 bg-gradient-to-b from-slate-800 to-black flex flex-col items-center justify-center border-b border-slate-700 gap-2">
+            <div className="w-full h-32 bg-gradient-to-b from-slate-800 to-black flex flex-col items-center justify-center border-b border-[var(--app-panel-border)] gap-2">
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Qt6 Style: {qt6Style}</span>
                 <div className="flex gap-2">
-                    <div className={`w-2 h-6 rounded-full ${qt6Style === 'wave' ? 'bg-purple-500' : 'bg-slate-700'}`}></div>
-                    <div className={`w-2 h-6 rounded-full ${qt6Style === 'bars' ? 'bg-purple-500' : 'bg-slate-700'}`}></div>
-                    <div className={`w-2 h-6 rounded-full ${qt6Style === 'circle' ? 'bg-purple-500' : 'bg-slate-700'}`}></div>
-                    <div className={`w-2 h-6 rounded-full ${qt6Style === 'circular-wave' ? 'bg-purple-500' : 'bg-slate-700'}`}></div>
+                    <div className={`w-2 h-6 rounded-full ${qt6Style === 'wave' ? 'bg-[var(--app-accent)]' : 'bg-slate-700'}`}></div>
+                    <div className={`w-2 h-6 rounded-full ${qt6Style === 'bars' ? 'bg-[var(--app-accent)]' : 'bg-slate-700'}`}></div>
+                    <div className={`w-2 h-6 rounded-full ${qt6Style === 'circle' ? 'bg-[var(--app-accent)]' : 'bg-slate-700'}`}></div>
+                    <div className={`w-2 h-6 rounded-full ${qt6Style === 'circular-wave' ? 'bg-[var(--app-accent)]' : 'bg-slate-700'}`}></div>
                 </div>
             </div>
           ) : (
-            <div className="w-full h-32 bg-black/70 flex items-center justify-center border-b border-slate-700">
+            <div className="w-full h-32 bg-black/70 flex items-center justify-center border-b border-[var(--app-panel-border)]">
               <span className="text-xs text-slate-400">No Background / No Main Visualizer</span>
             </div>
           )}
@@ -119,7 +119,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
                   <select 
                     value={aspectRatio}
                     onChange={(e) => setAspectRatio(e.target.value as keyof typeof ASPECT_RATIOS)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white focus:ring-1 focus:ring-purple-500"
+                    className="w-full bg-slate-900 border border-[var(--app-panel-border)] rounded p-2 text-xs text-white focus:ring-1 focus:ring-[var(--app-accent)]/50"
                   >
                       {Object.entries(ASPECT_RATIOS).map(([key, val]) => (
                           <option key={key} value={key}>{val.label} ({val.width}x{val.height})</option>
@@ -133,13 +133,13 @@ const MediaCard: React.FC<MediaCardProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setShowBackgroundLayer(!showBackgroundLayer)}
-                        className={`text-[10px] font-bold py-2 rounded transition-colors border ${showBackgroundLayer ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+                        className={`text-[10px] font-bold py-2 rounded transition-colors border ${showBackgroundLayer ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-900 border-[var(--app-panel-border)] text-slate-400'}`}
                       >
                         Background Media
                       </button>
                       <button
                         onClick={() => setMainVisualizerEnabled(!mainVisualizerEnabled)}
-                        className={`text-[10px] font-bold py-2 rounded transition-colors border ${mainVisualizerEnabled ? 'bg-purple-600 border-purple-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+                        className={`text-[10px] font-bold py-2 rounded transition-colors border ${mainVisualizerEnabled ? 'bg-[var(--app-accent)] border-purple-500 text-white' : 'bg-slate-900 border-[var(--app-panel-border)] text-slate-400'}`}
                       >
                         Main Visualizer
                       </button>
@@ -150,7 +150,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
               {showBackgroundLayer && (
                   <div>
                       <label className="text-xs text-slate-500 block mb-1">Custom Media</label>
-                      <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-slate-800 transition-colors group bg-slate-900/50">
+                      <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-[var(--app-panel)] transition-colors group bg-[var(--app-panel)]">
                           <input 
                             type="file" 
                             accept="image/png, image/jpeg, image/webp, video/mp4, video/webm" 
@@ -179,7 +179,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
                         </button>
                     </div>
                   ) : (
-                    <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-slate-800 transition-colors group bg-slate-900/50">
+                    <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-[var(--app-panel)] transition-colors group bg-[var(--app-panel)]">
                         <input
                             type="file"
                             accept="image/png, image/jpeg, image/webp"
@@ -210,7 +210,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
                           </button>
                       </div>
                   ) : (
-                    <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-slate-800 transition-colors group bg-slate-900/50">
+                    <label className="flex items-center justify-center w-full px-2 py-2 border border-dashed border-slate-600 rounded cursor-pointer hover:bg-[var(--app-panel)] transition-colors group bg-[var(--app-panel)]">
                         <input 
                             type="file" 
                             accept="audio/*" 

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SunoClip, AlignedWord, Qt6Style } from '../../../types';
 import { getLyricAlignment, getSunoClip } from '../../../services/sunoApi';
 import { ASPECT_RATIOS } from '../../../constants';
-import { drawCover, drawQt6Visualizer, drawScrollingLyrics, drawCornerPulseVisualizer, drawLogoCircularWave, drawLogoExpandingCircle, drawLogoWatermark } from '../../../utils/visualizer';
+import { drawCover, drawQt6Visualizer, drawScrollingLyrics, drawCornerPulseVisualizer, drawLogoCircularWave, drawLogoExpandingCircle, drawLogoWatermark, type VisualizerFrameData } from '../../../utils/visualizer';
 import { groupLyricsByLines, matchWordsToPrompt, groupWordsByTiming, stripMetaTags, getCleanAlignedWords } from '../../../utils/lyrics';
 import { performOfflineRender } from '../../../utils/offlineRender';
 
@@ -11,6 +11,8 @@ type VisualMode = 'cover' | 'qt6' | 'hybrid';
 type VisualizerTemplate = 'classic' | 'clean-lyrics' | 'corner-pulse' | 'cinematic-bars';
 type LogoPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 type LogoPulseStyle = 'expanding-circle' | 'radial-bars' | 'circular-wave';
+type Qt6LookPreset = 'retro-led' | 'broadcast-vu' | 'neon-spectrogram' | 'club-radial' | 'organic-ambient' | 'social-hybrid';
+type SpectrogramPalette = 'neon' | 'fire' | 'ice' | 'mono';
 type VisualizerConfig = {
     aspectRatio: keyof typeof ASPECT_RATIOS;
     showBackgroundLayer: boolean;
@@ -25,6 +27,11 @@ type VisualizerConfig = {
     qt6Style: Qt6Style;
     qt6BarCount: number;
     qt6Sensitivity: number;
+    qt6SpectrogramSpeed: number;
+    qt6ParticleDensity: number;
+    qt6RingCount: number;
+    qt6LedSegments: number;
+    qt6SpectrogramPalette: SpectrogramPalette;
     logoPosition: LogoPosition;
     logoScale: number;
     logoOpacity: number;
@@ -123,6 +130,11 @@ export const useVisualizer = (
     const [qt6Style, setQt6Style] = useState<Qt6Style>('wave');
     const [qt6BarCount, setQt6BarCount] = useState(64);
     const [qt6Sensitivity, setQt6Sensitivity] = useState(1.0);
+    const [qt6SpectrogramSpeed, setQt6SpectrogramSpeed] = useState(1);
+    const [qt6ParticleDensity, setQt6ParticleDensity] = useState(1);
+    const [qt6RingCount, setQt6RingCount] = useState(3);
+    const [qt6LedSegments, setQt6LedSegments] = useState(14);
+    const [qt6SpectrogramPalette, setQt6SpectrogramPalette] = useState<SpectrogramPalette>('neon');
 
     // Data State
     const [clipData, setClipData] = useState<SunoClip | null>(null);
@@ -142,8 +154,15 @@ export const useVisualizer = (
     // Audio Context & Analysis Refs
     const audioContextRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
+    const leftAnalyserRef = useRef<AnalyserNode | null>(null);
+    const rightAnalyserRef = useRef<AnalyserNode | null>(null);
     const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
     const dataArrayRef = useRef<Uint8Array | null>(null);
+    const timeDataArrayRef = useRef<Uint8Array | null>(null);
+    const leftDataArrayRef = useRef<Uint8Array | null>(null);
+    const rightDataArrayRef = useRef<Uint8Array | null>(null);
+    const leftTimeDataArrayRef = useRef<Uint8Array | null>(null);
+    const rightTimeDataArrayRef = useRef<Uint8Array | null>(null);
 
     // Smoothing Refs
     const smoothLineIdxRef = useRef(0);
@@ -200,6 +219,11 @@ export const useVisualizer = (
                     if (session.config.qt6Style) setQt6Style(session.config.qt6Style);
                     if (typeof session.config.qt6BarCount === 'number') setQt6BarCount(session.config.qt6BarCount);
                     if (typeof session.config.qt6Sensitivity === 'number') setQt6Sensitivity(session.config.qt6Sensitivity);
+                    if (typeof session.config.qt6SpectrogramSpeed === 'number') setQt6SpectrogramSpeed(session.config.qt6SpectrogramSpeed);
+                    if (typeof session.config.qt6ParticleDensity === 'number') setQt6ParticleDensity(session.config.qt6ParticleDensity);
+                    if (typeof session.config.qt6RingCount === 'number') setQt6RingCount(session.config.qt6RingCount);
+                    if (typeof session.config.qt6LedSegments === 'number') setQt6LedSegments(session.config.qt6LedSegments);
+                    if (session.config.qt6SpectrogramPalette) setQt6SpectrogramPalette(session.config.qt6SpectrogramPalette);
                     if (session.config.logoPosition) setLogoPosition(session.config.logoPosition);
                     if (typeof session.config.logoScale === 'number') setLogoScale(session.config.logoScale);
                     if (typeof session.config.logoOpacity === 'number') setLogoOpacity(session.config.logoOpacity);
@@ -258,15 +282,32 @@ export const useVisualizer = (
                 const analyser = ctx.createAnalyser();
                 analyser.fftSize = 2048; // Standard size
                 analyser.smoothingTimeConstant = 0.8;
+                const splitter = ctx.createChannelSplitter(2);
+                const leftAnalyser = ctx.createAnalyser();
+                const rightAnalyser = ctx.createAnalyser();
+                leftAnalyser.fftSize = 2048;
+                rightAnalyser.fftSize = 2048;
+                leftAnalyser.smoothingTimeConstant = 0.8;
+                rightAnalyser.smoothingTimeConstant = 0.8;
                 
                 const source = ctx.createMediaElementSource(audioRef.current);
                 source.connect(analyser);
+                source.connect(splitter);
+                splitter.connect(leftAnalyser, 0);
+                splitter.connect(rightAnalyser, 1);
                 analyser.connect(ctx.destination);
                 
                 audioContextRef.current = ctx;
                 analyserRef.current = analyser;
+                leftAnalyserRef.current = leftAnalyser;
+                rightAnalyserRef.current = rightAnalyser;
                 sourceNodeRef.current = source;
-                dataArrayRef.current = new Uint8Array(analyser.fftSize);
+                dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
+                timeDataArrayRef.current = new Uint8Array(analyser.fftSize);
+                leftDataArrayRef.current = new Uint8Array(leftAnalyser.frequencyBinCount);
+                rightDataArrayRef.current = new Uint8Array(rightAnalyser.frequencyBinCount);
+                leftTimeDataArrayRef.current = new Uint8Array(leftAnalyser.fftSize);
+                rightTimeDataArrayRef.current = new Uint8Array(rightAnalyser.fftSize);
             } catch (e) {
                 console.error("Audio Context Init Failed:", e);
             }
@@ -444,6 +485,11 @@ export const useVisualizer = (
         qt6Style,
         qt6BarCount,
         qt6Sensitivity,
+        qt6SpectrogramSpeed,
+        qt6ParticleDensity,
+        qt6RingCount,
+        qt6LedSegments,
+        qt6SpectrogramPalette,
         logoPosition,
         logoScale,
         logoOpacity,
@@ -468,7 +514,7 @@ export const useVisualizer = (
         postRollSeconds
     }), [
         aspectRatio, showBackgroundLayer, mainVisualizerEnabled, templatePreset, activeColor, inactiveColor, inactiveOpacity, fontFamily,
-        smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity,
+        smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity, qt6SpectrogramSpeed, qt6ParticleDensity, qt6RingCount, qt6LedSegments, qt6SpectrogramPalette,
         logoPosition, logoScale, logoOpacity, logoPulseEnabled, logoPulseStyle, logoPulseGap, logoPulseScale, logoPulseSensitivity, showTitle,
         videoBitrate, videoBitrateMode, audioBitrate, fps,
         outputAspectTarget, preRollEnabled, preRollType, preRollText, preRollSeconds, postRollEnabled, postRollType, postRollText, postRollSeconds
@@ -492,6 +538,11 @@ export const useVisualizer = (
         if (config.qt6Style) setQt6Style(config.qt6Style);
         if (typeof config.qt6BarCount === 'number') setQt6BarCount(config.qt6BarCount);
         if (typeof config.qt6Sensitivity === 'number') setQt6Sensitivity(config.qt6Sensitivity);
+        if (typeof config.qt6SpectrogramSpeed === 'number') setQt6SpectrogramSpeed(config.qt6SpectrogramSpeed);
+        if (typeof config.qt6ParticleDensity === 'number') setQt6ParticleDensity(config.qt6ParticleDensity);
+        if (typeof config.qt6RingCount === 'number') setQt6RingCount(config.qt6RingCount);
+        if (typeof config.qt6LedSegments === 'number') setQt6LedSegments(config.qt6LedSegments);
+        if (config.qt6SpectrogramPalette) setQt6SpectrogramPalette(config.qt6SpectrogramPalette);
         if (config.logoPosition) setLogoPosition(config.logoPosition);
         if (typeof config.logoScale === 'number') setLogoScale(config.logoScale);
         if (typeof config.logoOpacity === 'number') setLogoOpacity(config.logoOpacity);
@@ -546,6 +597,11 @@ export const useVisualizer = (
             setQt6Style('wave');
             setQt6BarCount(64);
             setQt6Sensitivity(1);
+            setQt6SpectrogramSpeed(1);
+            setQt6ParticleDensity(1);
+            setQt6RingCount(3);
+            setQt6LedSegments(14);
+            setQt6SpectrogramPalette('neon');
             setVerticalOffset(0);
             setActiveColor('#e879f9');
             setInactiveColor('#ffffff');
@@ -565,6 +621,11 @@ export const useVisualizer = (
             setQt6Style('bars');
             setQt6BarCount(32);
             setQt6Sensitivity(1.2);
+            setQt6SpectrogramSpeed(1);
+            setQt6ParticleDensity(1);
+            setQt6RingCount(3);
+            setQt6LedSegments(14);
+            setQt6SpectrogramPalette('neon');
             setVerticalOffset(0.12);
             setActiveColor('#f8fafc');
             setInactiveColor('#cbd5e1');
@@ -584,6 +645,11 @@ export const useVisualizer = (
             setQt6Style('circle');
             setQt6BarCount(64);
             setQt6Sensitivity(1.4);
+            setQt6SpectrogramSpeed(1);
+            setQt6ParticleDensity(1);
+            setQt6RingCount(3);
+            setQt6LedSegments(14);
+            setQt6SpectrogramPalette('neon');
             setVerticalOffset(0.1);
             setActiveColor('#22d3ee');
             setInactiveColor('#ffffff');
@@ -603,6 +669,11 @@ export const useVisualizer = (
             setQt6Style('bars');
             setQt6BarCount(128);
             setQt6Sensitivity(1.5);
+            setQt6SpectrogramSpeed(2);
+            setQt6ParticleDensity(1.2);
+            setQt6RingCount(3);
+            setQt6LedSegments(16);
+            setQt6SpectrogramPalette('fire');
             setVerticalOffset(0.06);
             setActiveColor('#f97316');
             setInactiveColor('#f8fafc');
@@ -617,6 +688,70 @@ export const useVisualizer = (
             setLogoPulseScale(1.25);
             setLogoPulseSensitivity(1.2);
         }
+    }, []);
+
+    const applyQt6LookPreset = useCallback((preset: Qt6LookPreset) => {
+        setMainVisualizerEnabled(true);
+        if (preset === 'retro-led') {
+            setQt6Style('led-bars');
+            setQt6BarCount(64);
+            setQt6LedSegments(18);
+            setQt6Sensitivity(1.35);
+            setActiveColor('#22c55e');
+            setQt6SpectrogramPalette('mono');
+            return;
+        }
+        if (preset === 'broadcast-vu') {
+            setQt6Style('vu-meter');
+            setQt6Sensitivity(1.25);
+            setActiveColor('#f59e0b');
+            return;
+        }
+        if (preset === 'neon-spectrogram') {
+            setQt6Style('spectrogram');
+            setQt6SpectrogramSpeed(2);
+            setQt6Sensitivity(1.4);
+            setActiveColor('#22d3ee');
+            setQt6SpectrogramPalette('neon');
+            return;
+        }
+        if (preset === 'club-radial') {
+            setQt6Style('radial-spectrum');
+            setQt6BarCount(128);
+            setQt6Sensitivity(1.65);
+            setActiveColor('#f97316');
+            return;
+        }
+        if (preset === 'organic-ambient') {
+            setQt6Style('organic-blob');
+            setQt6Sensitivity(1.1);
+            setActiveColor('#a78bfa');
+            return;
+        }
+        setQt6Style('wave-spectrum');
+        setQt6BarCount(64);
+        setQt6Sensitivity(1.2);
+        setActiveColor('#38bdf8');
+    }, []);
+
+    const randomizeQt6Look = useCallback(() => {
+        const styles: Qt6Style[] = [
+            'stereo-wave', 'stereo-bars', 'log-bars', 'led-bars', 'radial-spectrum',
+            'wave-spectrum', 'vu-meter', 'spectrogram', 'particle-pulse', 'organic-blob', 'multi-band-ring'
+        ];
+        const colors = ['#22d3ee', '#f97316', '#22c55e', '#e879f9', '#38bdf8', '#f43f5e', '#f59e0b', '#a78bfa'];
+        const palettes: SpectrogramPalette[] = ['neon', 'fire', 'ice', 'mono'];
+        const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+        setMainVisualizerEnabled(true);
+        setQt6Style(pick(styles));
+        setQt6BarCount(pick([32, 64, 128]));
+        setQt6Sensitivity(Number((0.9 + Math.random() * 1.3).toFixed(1)));
+        setQt6LedSegments(pick([10, 14, 18, 22]));
+        setQt6SpectrogramSpeed(pick([1, 2, 3, 4]));
+        setQt6ParticleDensity(Number((0.8 + Math.random() * 1.6).toFixed(1)));
+        setQt6RingCount(pick([2, 3, 4, 5]));
+        setQt6SpectrogramPalette(pick(palettes));
+        setActiveColor(pick(colors));
     }, []);
 
     useEffect(() => {
@@ -709,15 +844,61 @@ export const useVisualizer = (
     }, []);
 
     // --- DRAWING LOGIC ---
-    const resolveVisualizerData = (data?: Uint8Array | Float32Array) => {
+    const resolveVisualizerData = (data?: VisualizerFrameData): VisualizerFrameData | null => {
         if (data) return data;
         if (!analyserRef.current || !dataArrayRef.current) return null;
 
         if (qt6Style === 'wave') {
-            analyserRef.current.getByteTimeDomainData(dataArrayRef.current as any);
-        } else {
-            analyserRef.current.getByteFrequencyData(dataArrayRef.current as any);
+            const timeBuffer = timeDataArrayRef.current || dataArrayRef.current;
+            analyserRef.current.getByteTimeDomainData(timeBuffer as any);
+            return timeBuffer;
         }
+        if (qt6Style === 'stereo-wave') {
+            const monoTime = timeDataArrayRef.current || new Uint8Array(analyserRef.current.fftSize);
+            analyserRef.current.getByteFrequencyData(dataArrayRef.current as any);
+            analyserRef.current.getByteTimeDomainData(monoTime as any);
+            timeDataArrayRef.current = monoTime;
+            const leftAnalyser = leftAnalyserRef.current;
+            const rightAnalyser = rightAnalyserRef.current;
+            const leftTime = leftTimeDataArrayRef.current;
+            const rightTime = rightTimeDataArrayRef.current;
+            if (leftAnalyser && rightAnalyser && leftTime && rightTime) {
+                leftAnalyser.getByteTimeDomainData(leftTime as any);
+                rightAnalyser.getByteTimeDomainData(rightTime as any);
+                return {
+                    frequencyData: dataArrayRef.current,
+                    timeData: monoTime,
+                    leftTimeData: leftTime,
+                    rightTimeData: rightTime
+                };
+            }
+            return monoTime;
+        }
+        if (qt6Style === 'wave-spectrum') {
+            const freqBuffer = dataArrayRef.current;
+            const timeBuffer = timeDataArrayRef.current || new Uint8Array(analyserRef.current.fftSize);
+            analyserRef.current.getByteFrequencyData(freqBuffer as any);
+            analyserRef.current.getByteTimeDomainData(timeBuffer as any);
+            timeDataArrayRef.current = timeBuffer;
+            return { frequencyData: freqBuffer, timeData: timeBuffer };
+        }
+        if (qt6Style === 'stereo-bars' || qt6Style === 'vu-meter') {
+            analyserRef.current.getByteFrequencyData(dataArrayRef.current as any);
+            const leftAnalyser = leftAnalyserRef.current;
+            const rightAnalyser = rightAnalyserRef.current;
+            const leftBuffer = leftDataArrayRef.current;
+            const rightBuffer = rightDataArrayRef.current;
+            if (leftAnalyser && rightAnalyser && leftBuffer && rightBuffer) {
+                leftAnalyser.getByteFrequencyData(leftBuffer as any);
+                rightAnalyser.getByteFrequencyData(rightBuffer as any);
+                return {
+                    frequencyData: dataArrayRef.current,
+                    leftFrequencyData: leftBuffer,
+                    rightFrequencyData: rightBuffer
+                };
+            }
+        }
+        analyserRef.current.getByteFrequencyData(dataArrayRef.current as any);
         return dataArrayRef.current;
     };
 
@@ -736,7 +917,7 @@ export const useVisualizer = (
         return { x: width - margin - logoSizePx, y: height - margin - logoSizePx, size: logoSizePx };
     };
 
-    const renderFrame = (ctx: CanvasRenderingContext2D, width: number, height: number, time: number, data?: Uint8Array | Float32Array) => {
+    const renderFrame = (ctx: CanvasRenderingContext2D, width: number, height: number, time: number, data?: VisualizerFrameData) => {
         // 1. Background Layer
         ctx.fillStyle = '#1e1e1e';
         ctx.fillRect(0, 0, width, height);
@@ -779,16 +960,26 @@ export const useVisualizer = (
             const visualData = resolveVisualizerData(data);
             if (visualData) {
                 if (mainVisualizerEnabled) {
-                    drawQt6Visualizer(ctx, width, height, visualData, qt6Style, { activeColor, qt6Sensitivity, qt6BarCount });
+                    drawQt6Visualizer(ctx, width, height, visualData, qt6Style, {
+                        activeColor,
+                        qt6Sensitivity,
+                        qt6BarCount,
+                        qt6SpectrogramSpeed,
+                        qt6ParticleDensity,
+                        qt6RingCount,
+                        qt6LedSegments,
+                        qt6SpectrogramPalette
+                    });
                 }
                 if (logoPulseEnabled && logoAsset && logoImg?.complete) {
+                    const logoVisualData = (visualData as any).frequencyData ? (visualData as any).frequencyData : visualData;
                     const anchor = getLogoAnchor(width, height);
                     const logoEdgeRadius = (anchor.size * Math.SQRT2) / 2;
                     const pulseRadius = Math.max(8, (logoEdgeRadius + logoPulseGap) * logoPulseScale);
                     const centerX = anchor.x + (anchor.size / 2);
                     const centerY = anchor.y + (anchor.size / 2);
                     if (logoPulseStyle === 'radial-bars') {
-                        drawCornerPulseVisualizer(ctx, visualData, {
+                        drawCornerPulseVisualizer(ctx, logoVisualData as any, {
                             activeColor,
                             qt6Sensitivity: logoPulseSensitivity,
                             centerX,
@@ -796,7 +987,7 @@ export const useVisualizer = (
                             radius: pulseRadius * 0.55
                         });
                     } else if (logoPulseStyle === 'circular-wave') {
-                        drawLogoCircularWave(ctx, visualData, {
+                        drawLogoCircularWave(ctx, logoVisualData as any, {
                             activeColor,
                             sensitivity: logoPulseSensitivity,
                             centerX,
@@ -804,7 +995,7 @@ export const useVisualizer = (
                             radius: pulseRadius * 0.5
                         });
                     } else {
-                        drawLogoExpandingCircle(ctx, visualData, {
+                        drawLogoExpandingCircle(ctx, logoVisualData as any, {
                             activeColor,
                             sensitivity: logoPulseSensitivity,
                             centerX,
@@ -867,7 +1058,7 @@ export const useVisualizer = (
             setProgress(audioRef.current.currentTime);
             requestRef.current = requestAnimationFrame(animate);
         }
-    }, [isRendering, customBg, aspectRatio, clipData, duration, activeColor, inactiveColor, inactiveOpacity, fontFamily, smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity, showBackgroundLayer, mainVisualizerEnabled, lines, logoAsset, logoPosition, logoScale, logoOpacity, logoPulseEnabled, logoPulseStyle, logoPulseGap, logoPulseScale, logoPulseSensitivity, showTitle]);
+    }, [isRendering, customBg, aspectRatio, clipData, duration, activeColor, inactiveColor, inactiveOpacity, fontFamily, smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity, qt6SpectrogramSpeed, qt6ParticleDensity, qt6RingCount, qt6LedSegments, qt6SpectrogramPalette, showBackgroundLayer, mainVisualizerEnabled, lines, logoAsset, logoPosition, logoScale, logoOpacity, logoPulseEnabled, logoPulseStyle, logoPulseGap, logoPulseScale, logoPulseSensitivity, showTitle]);
 
     useEffect(() => {
         if (selectedClipId && !isRendering) {
@@ -961,7 +1152,7 @@ export const useVisualizer = (
             selectedClipId, manualId, aspectRatio, showBackgroundLayer, mainVisualizerEnabled, visualMode: currentVisualMode, customBg, customAudio,
             templatePreset, logoAsset, logoPosition, logoScale, logoOpacity, logoPulseEnabled, logoPulseStyle, logoPulseGap, logoPulseScale, logoPulseSensitivity, showTitle,
             audioBitrate, videoBitrate, videoBitrateMode, fps, outputAspectTarget, preRollEnabled, preRollType, preRollText, preRollSeconds, postRollEnabled, postRollType, postRollText, postRollSeconds, imgSrc, activeColor, inactiveColor, inactiveOpacity, fontFamily,
-            smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity,
+            smoothingFactor, verticalOffset, qt6Style, qt6BarCount, qt6Sensitivity, qt6SpectrogramSpeed, qt6ParticleDensity, qt6RingCount, qt6LedSegments, qt6SpectrogramPalette,
             clipData, alignment, lines, lyricSource, applyStatus, savedPresets,
             isRendering, renderProgress, renderError, renderSpeed, isPreparing, isGrouping, progress, duration, isPlaying
         },
@@ -969,14 +1160,14 @@ export const useVisualizer = (
             setSelectedClipId, setManualId, setAspectRatio, setShowBackgroundLayer, setMainVisualizerEnabled, setCustomBg, setCustomAudio,
             setTemplatePreset, setLogoAsset, setLogoPosition, setLogoScale, setLogoOpacity, setLogoPulseEnabled, setLogoPulseStyle, setLogoPulseGap, setLogoPulseScale, setLogoPulseSensitivity, setShowTitle,
             setAudioBitrate, setVideoBitrate, setVideoBitrateMode, setFps, setOutputAspectTarget, setPreRollEnabled, setPreRollType, setPreRollText, setPreRollSeconds, setPostRollEnabled, setPostRollType, setPostRollText, setPostRollSeconds, setImgSrc, setActiveColor, setInactiveColor, setInactiveOpacity, setFontFamily,
-            setSmoothingFactor, setVerticalOffset, setQt6Style, setQt6BarCount, setQt6Sensitivity,
+            setSmoothingFactor, setVerticalOffset, setQt6Style, setQt6BarCount, setQt6Sensitivity, setQt6SpectrogramSpeed, setQt6ParticleDensity, setQt6RingCount, setQt6LedSegments, setQt6SpectrogramPalette,
             setLyricSource, setIsPlaying
         },
         refs: {
             canvasRef, audioRef, customVideoRef
         },
         handlers: {
-            handleManualLoad, handleFileUpload, handleAudioUpload, handleLogoUpload, handleApplyLyrics, applyTemplatePreset,
+            handleManualLoad, handleFileUpload, handleAudioUpload, handleLogoUpload, handleApplyLyrics, applyTemplatePreset, applyQt6LookPreset, randomizeQt6Look,
             handleSmartGroup, handleSeek, togglePlay, startOfflineRender, handleImageError, setDuration,
             saveCurrentPreset, applySavedPreset, deleteSavedPreset
         }

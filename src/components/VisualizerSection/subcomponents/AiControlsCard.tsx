@@ -17,7 +17,7 @@ const AiControlsCard: React.FC<AiControlsCardProps> = ({
   onSmartGroup 
 }) => {
   return (
-    <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+    <div className="bg-[var(--app-panel)] rounded-xl p-4 border border-[var(--app-panel-border)]">
         <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 mb-1">
                 <span className={`w-2 h-2 rounded-full ${alignment ? 'bg-green-500' : 'bg-red-500'}`}></span>
@@ -30,7 +30,7 @@ const AiControlsCard: React.FC<AiControlsCardProps> = ({
                   <button 
                     onClick={onSmartGroup}
                     disabled={isGrouping || isRendering}
-                    className="w-full py-2 bg-slate-700 hover:bg-purple-600 text-white text-xs font-bold rounded transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-2 bg-slate-700 hover:bg-[var(--app-accent)] text-white text-xs font-bold rounded transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                       {isGrouping ? (
                           <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

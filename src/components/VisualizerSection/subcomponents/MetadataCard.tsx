@@ -16,8 +16,8 @@ const MetadataCard: React.FC<MetadataCardProps> = ({
   hasAlignment 
 }) => {
   return (
-    <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-lg">
-      <div className="bg-slate-900/50 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+    <div className="bg-[var(--app-panel)] rounded-xl overflow-hidden border border-[var(--app-panel-border)] shadow-lg">
+      <div className="bg-[var(--app-panel)] px-4 py-3 border-b border-[var(--app-panel-border)] flex justify-between items-center">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lyrics & Structure Source</h3>
           <button 
               onClick={onApplyLyrics}
@@ -25,7 +25,7 @@ const MetadataCard: React.FC<MetadataCardProps> = ({
               className={`text-xs px-2 py-1 rounded transition-colors disabled:opacity-50 font-bold border
                   ${applyStatus === 'applied' 
                       ? 'bg-green-600 border-green-500 text-white' 
-                      : 'bg-purple-600 hover:bg-purple-500 border-purple-500 text-white'}`}
+                      : 'bg-[var(--app-accent)] hover:bg-[var(--app-accent)] border-purple-500 text-white'}`}
               title="Update lines based on this text"
           >
               {applyStatus === 'applied' ? 'Applied!' : 'Apply Structure'}
@@ -35,7 +35,7 @@ const MetadataCard: React.FC<MetadataCardProps> = ({
             <textarea 
               value={lyricSource}
               onChange={(e) => setLyricSource(e.target.value)}
-              className="w-full h-40 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-300 placeholder-slate-600 focus:ring-1 focus:ring-purple-500 outline-none custom-scrollbar resize-none leading-relaxed"
+              className="w-full h-40 bg-slate-950 border border-[var(--app-panel-border)] rounded-lg p-3 text-xs font-mono text-slate-300 placeholder-slate-600 focus:ring-1 focus:ring-[var(--app-accent)]/50 outline-none custom-scrollbar resize-none leading-relaxed"
               placeholder="Paste lyrics here. Use newlines to determine how lines are grouped in the visualizer."
             />
             <p className="text-[10px] text-slate-500 mt-2 px-1">
